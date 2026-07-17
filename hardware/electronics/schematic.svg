@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">OpenGlassHole reference wiring schematic</title>
+  <desc id="desc">A protected lithium polymer cell connects through a switch to the XIAO ESP32-C3 battery pads. The XIAO powers a four-wire I2C OLED and reads one push button.</desc>
+  <style>
+    .bg{fill:#0f1419}.panel{fill:#19232d;stroke:#9fb3c8;stroke-width:3}.label{fill:#eef6ff;font:700 25px system-ui,sans-serif}.small{fill:#c7d4e2;font:18px system-ui,sans-serif}.tiny{fill:#b9c8d8;font:15px system-ui,sans-serif}.pin{fill:#0f1419;stroke:#7f95aa;stroke-width:2}.wire{fill:none;stroke-width:5;stroke-linejoin:round}.red{stroke:#ff6262}.black{stroke:#b4c1ce}.blue{stroke:#63b7ff}.yellow{stroke:#ffd166}.green{stroke:#5ee1a2}.dash{stroke-dasharray:10 8}.note{fill:#242f3a;stroke:#64788b;stroke-width:2}
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <text x="50" y="58" class="label">OpenGlassHole — reference point-to-point wiring</text>
+
+  <rect x="60" y="245" width="195" height="135" rx="16" class="panel"/>
+  <text x="82" y="285" class="label">Protected</text><text x="82" y="317" class="label">1S LiPo</text>
+  <text x="82" y="350" class="small">3.7 V, 500 mAh</text>
+  <circle cx="255" cy="275" r="8" fill="#ff6262"/><circle cx="255" cy="350" r="8" fill="#b4c1ce"/>
+  <text x="221" y="269" class="tiny">+</text><text x="221" y="371" class="tiny">−</text>
+
+  <rect x="335" y="232" width="105" height="58" rx="10" class="panel"/>
+  <text x="355" y="268" class="small">SW1</text>
+  <path d="M350 282 L410 242" class="wire red"/>
+
+  <rect x="505" y="160" width="315" height="380" rx="18" class="panel"/>
+  <text x="545" y="210" class="label">XIAO ESP32-C3</text>
+  <text x="545" y="240" class="small">USB-C + onboard 1S charger</text>
+  <rect x="495" y="265" width="92" height="38" rx="7" class="pin"/><text x="512" y="291" class="small">BAT+</text>
+  <rect x="495" y="335" width="92" height="38" rx="7" class="pin"/><text x="512" y="361" class="small">BAT−</text>
+  <rect x="738" y="280" width="92" height="38" rx="7" class="pin"/><text x="756" y="306" class="small">3V3</text>
+  <rect x="738" y="335" width="92" height="38" rx="7" class="pin"/><text x="758" y="361" class="small">GND</text>
+  <rect x="738" y="405" width="92" height="38" rx="7" class="pin"/><text x="750" y="431" class="small">D4/SDA</text>
+  <rect x="738" y="460" width="92" height="38" rx="7" class="pin"/><text x="750" y="486" class="small">D5/SCL</text>
+  <rect x="495" y="440" width="92" height="38" rx="7" class="pin"/><text x="514" y="466" class="small">D2</text>
+  <rect x="610" y="115" width="105" height="48" rx="8" class="pin"/><text x="623" y="146" class="small">USB-C</text>
+  <path d="M662 115 V82" class="wire green"/><text x="688" y="93" class="tiny">program + charge</text>
+
+  <rect x="930" y="245" width="210" height="225" rx="16" class="panel"/>
+  <text x="970" y="287" class="label">OLED</text><text x="953" y="318" class="small">64×32 SSD1315</text>
+  <circle cx="930" cy="350" r="8" fill="#ff6262"/><text x="951" y="357" class="small">VCC</text>
+  <circle cx="930" cy="390" r="8" fill="#b4c1ce"/><text x="951" y="397" class="small">GND</text>
+  <circle cx="930" cy="430" r="8" fill="#63b7ff"/><text x="951" y="437" class="small">SDA</text>
+  <circle cx="930" cy="470" r="8" fill="#ffd166"/><text x="951" y="477" class="small">SCL</text>
+
+  <path d="M255 275 H335 M440 260 H475 V284 H495" class="wire red"/>
+  <path d="M255 350 H495" class="wire black"/>
+  <path d="M830 299 H875 V350 H930" class="wire red"/>
+  <path d="M830 354 H875 V390 H930" class="wire black"/>
+  <path d="M830 424 H930" class="wire blue"/>
+  <path d="M830 479 H875 V470 H930" class="wire yellow"/>
+
+  <circle cx="365" cy="535" r="23" class="panel"/><path d="M342 535 H388" class="wire green"/><text x="312" y="586" class="small">BTN1</text>
+  <path d="M495 459 H365 V512" class="wire green"/>
+  <path d="M365 558 V615 H680 V373 H738" class="wire black"/>
+
+  <rect x="60" y="615" width="1080" height="66" rx="12" class="note"/>
+  <text x="82" y="643" class="small">SW1 must be ON while charging. Verify battery and cable polarity with a multimeter.</text>
+  <text x="82" y="669" class="tiny">OLED cable colours are not authoritative. Attach the XIAO’s included external antenna and keep it clear of the battery.</text>
+</svg>

@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  software:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install validation tools
+        run: python -m pip install platformio==6.1.19 ruff==0.12.4
+      - name: Test and lint the cue server
+        run: |
+          python -m unittest discover -s server/tests -v
+          python -m compileall -q server tools
+          ruff check server tools
+      - name: Check documentation and budget
+        run: |
+          python tools/check_bom.py
+          python tools/check_repo.py
+      - name: Build ESP32-C3 firmware
+        run: pio run --project-dir firmware
+
+  cad:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OpenSCAD
+        run: sudo apt-get update && sudo apt-get install --yes openscad
+      - name: Validate printable meshes and tracked releases
+        run: make -C hardware/cad check-release

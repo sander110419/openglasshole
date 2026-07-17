@@ -1,0 +1,23 @@
+OpenGlassHole uses two permissive open-source licenses.
+
+Software
+========
+
+The contents of firmware/, server/, tools/, .github/, and root build/config
+files are licensed under the MIT License. The full text is in
+LICENSES/MIT.txt. SPDX-License-Identifier: MIT.
+
+Hardware and documentation
+==========================
+
+The contents of hardware/ and docs/, plus README.md, CONTRIBUTING.md, and
+SECURITY.md, including CAD source, generated printable models, schematics,
+diagrams, bills of materials, and build documentation, are licensed under the
+CERN Open Hardware Licence Version 2 - Permissive. The full text is in
+LICENSES/CERN-OHL-P-2.0.txt.
+SPDX-License-Identifier: CERN-OHL-P-2.0.
+
+Copyright (c) 2026 OpenGlassHole contributors.
+
+Third-party libraries, tools, modules, and referenced vendor assets are not
+relicensed by this repository and remain under their respective terms.

@@ -1,0 +1,5 @@
+mode,estimated_average_mA,usable_500mAh_hours,assumptions
+Worst case sustained,95,4.2,"75 mA board active Wi-Fi plus about 20 mA all-pixel OLED; conservative lower bound"
+Always connected live polling,36,11.1,"Maximum modem sleep, short polls, sparse OLED around 6 mA"
+Reference radio-off polling,18,22.2,"15 s conditional GET, radio off between polls, software vertical scroller, sparse dim OLED"
+Optimized script cached locally,12,33.3,"Fetch once, radio off during playback, modeled sparse low-brightness text"

@@ -1,0 +1,51 @@
+name: Physical build report
+description: Share measured optical, mechanical, and power results from a real build.
+title: "Build report: "
+labels: ["build report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for building it. Do not include credentials, exact prescription data, addresses, or other personal information. This is not a safety certification.
+  - type: input
+    id: commit
+    attributes:
+      label: Repository commit
+      placeholder: Full git commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: parts
+    attributes:
+      label: Exact parts and CAD parameters
+      description: OLED; lens EFL/BFL, diameter, thickness, and both measured face sags; combiner size/ratio; protected cell rating; printer/material; and changed parameters.
+    validations:
+      required: true
+  - type: textarea
+    id: optics
+    attributes:
+      label: Optical and mechanical measurements
+      description: Eye box, focus position, mass, clearance, drift, brightness, ghosting, prescription-lens effects, and comfort.
+    validations:
+      required: true
+  - type: textarea
+    id: power
+    attributes:
+      label: Power measurements
+      description: Poll interval, contrast, RSSI, average currents, measured runtime, charge time, and method/instrument.
+    validations:
+      required: true
+  - type: textarea
+    id: failures
+    attributes:
+      label: Failures, safety issues, and modifications
+      description: Include what did not work; failed results are especially useful.
+    validations:
+      required: true
+  - type: checkboxes
+    id: acknowledgement
+    attributes:
+      label: Safety acknowledgement
+      options:
+        - label: I tested stationary, charged off-head, and have not presented this report as certification.
+          required: true

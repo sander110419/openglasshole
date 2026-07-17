@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Top view of the OpenGlassHole optical path</title>
+  <desc id="desc">Light from a side-mounted OLED passes through a positive lens, reflects from a forty-five degree beamsplitter pane, passes through the wearer's prescription lens, and reaches the right eye. Light from the real world travels through that same combiner toward the eye.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker>
+    <linearGradient id="comb" x1="0" x2="1"><stop offset="0" stop-color="#7de3ff" stop-opacity=".25"/><stop offset=".5" stop-color="#d8fbff" stop-opacity=".8"/><stop offset="1" stop-color="#7de3ff" stop-opacity=".25"/></linearGradient>
+  </defs>
+  <style>
+    .bg{fill:#0d1218}.body{fill:#1c2731;stroke:#9db0c3;stroke-width:4}.label{fill:#eef6ff;font:700 25px system-ui,sans-serif}.small{fill:#bdccda;font:18px system-ui,sans-serif}.ray{fill:none;stroke:#52e4b4;stroke-width:7;marker-end:url(#arrow)}.world{fill:none;stroke:#67b9ff;stroke-width:5;stroke-dasharray:12 10;marker-end:url(#arrow)}.datum{stroke:#62788b;stroke-width:2;stroke-dasharray:7 7}.pane{fill:url(#comb);stroke:#b9f1ff;stroke-width:5}.lens{fill:#6fa9ff;fill-opacity:.35;stroke:#9fc6ff;stroke-width:5}.rx{fill:none;stroke:#d5e2ef;stroke-width:10}.note{fill:#18232d;stroke:#657a8d;stroke-width:2}
+  </style>
+  <rect class="bg" width="1200" height="620"/>
+  <text x="45" y="55" class="label">Right-eye top view — one-fold collimated combiner</text>
+  <text x="45" y="84" class="small">Packaging sketch, not an optical ray trace and not to scale</text>
+
+  <path d="M905 75 L294 449" class="world"/>
+  <text x="45" y="310" class="small">blue dashed: real-world light</text>
+  <text x="45" y="338" class="small">normal sight line through pane</text>
+
+  <rect x="920" y="185" width="120" height="150" rx="14" class="body"/>
+  <text x="936" y="240" class="label">OLED</text><text x="930" y="275" class="small">64×32 panel</text><text x="924" y="301" class="small">48×32 cue</text>
+  <path d="M920 260 H790" class="ray"/>
+  <path d="M780 180 Q735 260 780 340" class="lens"/>
+  <path d="M790 260 H592" class="ray"/>
+
+  <polygon points="525,155 565,135 675,355 635,375" class="pane"/>
+  <text x="478" y="410" class="label">30×30 mm combiner</text><text x="498" y="437" class="small">nominal 45° yaw</text>
+  <path d="M611 260 L430 430" class="ray"/>
+
+  <path d="M365 350 Q420 425 365 500" class="rx"/>
+  <text x="300" y="535" class="small">prescription lens</text>
+  <ellipse cx="250" cy="455" rx="65" ry="45" class="body"/>
+  <circle cx="275" cy="450" r="18" fill="#6bc8ff"/><circle cx="280" cy="447" r="7" fill="#0a1016"/>
+  <text x="195" y="550" class="label">eye</text>
+  <path d="M430 430 L294 449" class="ray"/>
+
+  <line x1="790" y1="165" x2="920" y2="165" class="datum"/>
+  <line x1="790" y1="152" x2="790" y2="178" stroke="#92a7b9" stroke-width="3"/><line x1="920" y1="152" x2="920" y2="178" stroke="#92a7b9" stroke-width="3"/>
+  <text x="805" y="147" class="small">adjust OLED near lens BFL</text>
+
+  <rect x="735" y="490" width="420" height="90" rx="12" class="note"/>
+  <text x="755" y="523" class="small">The 50/50 pane occupies one eye’s sightline.</text>
+  <text x="755" y="552" class="small">Firmware pre-mirrors text after one reflection.</text>
+</svg>

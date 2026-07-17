@@ -1,0 +1,17 @@
+.pio/
+.venv/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+Thumbs.db
+
+# Local device and server configuration
+firmware/include/config.h
+server/data/
+*.local.json
+
+# CAD scratch/export files (the reviewed release exports stay tracked)
+hardware/cad/build/
+*.FCStd1
