@@ -12,13 +12,13 @@
 Run on localhost for development:
 
 ```sh
-OPENGLASSHOLE_API_KEY='development-only' python3 server/cue_server.py
+OPEN_OCCUCUE_API_KEY='development-only' python3 server/cue_server.py
 ```
 
 Run on a trusted LAN for the glasses:
 
 ```sh
-OPENGLASSHOLE_API_KEY='replace-with-a-long-random-key' \
+OPEN_OCCUCUE_API_KEY='replace-with-a-long-random-key' \
   python3 server/cue_server.py --host 0.0.0.0 --port 8787
 ```
 

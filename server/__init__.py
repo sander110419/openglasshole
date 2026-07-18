@@ -1,1 +1,1 @@
-"""OpenGlassHole cue server package."""
+"""Open OccuCue cue server package."""

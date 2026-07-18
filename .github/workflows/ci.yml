@@ -32,7 +32,9 @@ jobs:
           python tools/check_bom.py
           python tools/check_repo.py
       - name: Build ESP32-C3 firmware
-        run: pio run --project-dir firmware
+        run: |
+          bash firmware/tests/run_host_tests.sh
+          pio run --project-dir firmware
 
   cad:
     runs-on: ubuntu-latest

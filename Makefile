@@ -8,6 +8,7 @@ server-test:
 	$(PYTHON) -m compileall -q server tools
 
 firmware:
+	bash firmware/tests/run_host_tests.sh
 	$(PIO) run --project-dir firmware
 
 cad:

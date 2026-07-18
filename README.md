@@ -1,21 +1,33 @@
-# OpenGlassHole
+# Open OccuCue
 
 An open-source, clip-on, monocular heads-up autocue for ordinary prescription glasses.
 It uses a tiny Wi-Fi microcontroller, a 64×32 white OLED, one positive lens, and
-a separate 45° combiner pane to put scrolling server text at a comfortable
+a separate 45° combiner pane to put server-fed text at a comfortable
 virtual distance. The reference optical path uses the OLED's central 48×32
 pixels to trade two characters per line for a larger eye box.
 
-![OpenGlassHole optical path](docs/images/optical-path.svg)
+![Open OccuCue optical path](docs/images/optical-path.svg)
 
-![OpenGlassHole right-eye CAD assembly preview](hardware/cad/assembly-preview.png)
+![Open OccuCue deployed right-eye CAD assembly](hardware/cad/assembly-preview.png)
 
-*CAD packaging preview, not a photograph or physical fit validation.*
+![Open OccuCue parked clear-away CAD assembly](hardware/cad/parked-preview.png)
+
+*Reproducible source-CAD renders of the deployed and 100° parked poses, not
+photographs or physical fit validation. The eye/lens/temple are scale proxies.*
 
 > **Prototype status:** firmware, server, schematic, and parametric CAD are
-> implemented and build-checked, but this v0.1 hardware has not yet been
+> implemented and build-checked, but this v0.2 hardware has not yet been
 > physically assembled or optically validated. Dimensions, runtime, eye box,
-> and comfort are engineering targets until a real build report lands.
+> hinge retention, walking comfort, and breakaway behavior are engineering
+> targets until a real build report lands.
+
+> **AI-generation disclosure:** Every repository artifact in the recorded
+> generation run—code, CAD, schematics, documentation, tests, and native
+> images—was produced or edited by OpenAI Codex. The requester contributed
+> **zero manually authored implementation artifacts**. They did supply the
+> natural-language prompts and publication direction, which are human input;
+> the exact prompts, elapsed time, and token accounting are published in
+> [AI_PROVENANCE.md](docs/AI_PROVENANCE.md).
 
 ## The honest version
 
@@ -29,24 +41,36 @@ pixels to trade two characters per line for a larger eye box.
   charger, protected PKCELL 500 mAh cell, and a 0.49-inch Waveshare SSD1315
   OLED.
 - **Optics:** a 25 mm / 45 mm FL positive lens and a 30×30 mm 50R/50T plate
-  combiner. The pane—not the prescription lens—reflects the cue. A measured
-  6×6 mm full-cue eye box is a build acceptance requirement, not a promise.
-- **Expected use:** seated, stationary, indoor autocue. It will wash out in
-  sunlight and has a much smaller eye box than commercial waveguide glasses.
+  combiner. A keyed 16×14 mm rectangular stop has a first-order 8.23×8.82 mm
+  full-field eye box; the pane—not the prescription lens—reflects the cue. A
+  measured all-corner 6×6 mm eye box is still a build requirement, not a
+  promise.
+- **Expected use:** seated, stationary, indoor autocue. A controlled walking
+  configuration adds whole-line stepping, one-tap blackout, a positively kept
+  100° parked pose, and a body battery pod, but it remains an experimental
+  [empty-level-room protocol](docs/WALKING_EXPERIMENT.md), not a general
+  walking safety claim. It will wash out in sunlight.
 - **Power target:** roughly 18–29 hours with 15-second radio-off polling and
   sparse low-contrast text; about 4.2 hours is the conservative sustained
   worst-case estimate. Neither is a measured runtime yet.
-- **Packaging:** the printed forward assembly's CAD envelope is about
-  89.2×61.1×46.4 mm (the tunnel itself is 58.8×27.9×27.9 mm). With the optional
-  rear pod on the glasses, the full envelope is about 113.5×120.3×46.4 mm. A
-  preliminary all-on-glasses mass estimate is roughly 55–65 g; use the
-  documented collar/pocket-pod option if that is uncomfortable. Neither mass
-  nor comfort has been measured on a real build.
+- **Packaging:** the optical tunnel remains 58.8 mm long and 27.9 mm square at
+  the lens, but its main body is now 21.3×25.9 mm (about 29% less cross-section)
+  and its keyed OLED sled uses about half the previous printed volume. The
+  compact rail/hinge removes the 3 mm cross adapter and three net fasteners.
+  Splitting the cell into a body pod shrinks the on-glasses electronics shell
+  from 35.9×66.4×13.5 mm to about 22.9×31.4×10.8 mm. CAD volume and sourced
+  component weights suggest roughly 35–45 g on the glasses, about 25 g below
+  the legacy 55–65 g estimate. Neither estimate is measured.
 
-The focus sled, padded strap saddle, sliding rail, separate rear electronics
-pod, left/right assembly previews, bench jig, and combiner cut template are
-parametric. The OLED driver pre-mirrors text and handles the module's
-nonstandard visible RAM-column offset.
+The focus sled, padded strap saddle, sliding/flip-up carriage, integrated and
+split pod variants, left/right assembly previews, bench jig, and combiner cut
+template are parametric. The OLED driver pre-mirrors text and handles the
+module's nonstandard visible RAM-column offset.
+
+![Open OccuCue split controller and body battery pods](hardware/cad/split-pods-preview.png)
+
+*The XIAO stays local to the OLED; only protected battery power crosses the
+two-wire tether. Lids are exploded here to show the packaging proxies.*
 
 ## Safety first
 
@@ -54,7 +78,8 @@ This is uncertified DIY eyewear, not PPE or a medical device. Never use it while
 driving, cycling, crossing roads, walking in traffic, using stairs, or operating
 machinery. Charge the LiPo off-head and attended; never wear exposed prototypes.
 The positive lens can concentrate sunlight, and every glass edge must be fully
-captured. Read [the complete safety rules](docs/SAFETY.md) before ordering parts.
+captured. A tether is not a breakaway until it passes off-head pull tests. Read
+[the complete safety rules](docs/SAFETY.md) before ordering parts.
 
 ## How it works
 
@@ -71,15 +96,18 @@ eye <─ prescription lens <─ combiner <─ collimating lens
 
 The server returns raw cue text plus `ETag`, poll, and scroll headers. Unchanged
 cues return `304` with no body. The display caches the last valid cue, turns the
-radio off between polls, word-wraps it to 8 characters × 4 rows, and
-scrolls upward through network outages. The first and last views pause briefly
-before the cue loops. Tap the one button to pause/resume; hold it to fetch
+radio off between polls, word-wraps it to 8 characters × 4 rows, and plays it
+through network outages. Smooth scrolling remains available; optional glance
+mode advances one complete row between stable dwell periods. The first and last
+views pause before the cue loops. By default a short tap pauses and blacks out
+the OLED, the next tap restores the same position, and a hold fetches
 immediately.
 
 ## Build it
 
 1. Read [SAFETY.md](docs/SAFETY.md), then inspect the
-   [BOM](hardware/bom.csv) and [power assumptions](docs/POWER.md).
+   [BOM](hardware/bom.csv), [costed upgrade options](docs/OPTIONS.md), and
+   [power assumptions](docs/POWER.md).
 2. Wire the OLED over USB only using the
    [schematic](hardware/electronics/schematic.svg).
 3. Copy `firmware/include/config.example.h` to the gitignored `config.h`, set
@@ -87,13 +115,15 @@ immediately.
 4. Run the dependency-free server:
 
    ```sh
-   export OPENGLASSHOLE_API_KEY='replace-with-a-long-random-key'
+   export OPEN_OCCUCUE_API_KEY='replace-with-a-long-random-key'
    python3 server/cue_server.py --host 0.0.0.0 --port 8787
    ```
 
 5. Print the fit coupon and focus jig. Prove focus and brightness on the bench
    before printing or wearing the clip.
-6. Follow the [full build and alignment guide](docs/BUILD_GUIDE.md).
+6. Follow the [full build and alignment guide](docs/BUILD_GUIDE.md). Keep the
+   first build stationary; the split-pod walking configuration has a separate
+   [staged validation protocol](docs/WALKING_EXPERIMENT.md).
 
 The browser editor is at `http://<server-lan-ip>:8787/`. The firmware consumes
 `/api/v1/cue.txt?device=default`; see [API.md](docs/API.md) for automation.
@@ -109,14 +139,19 @@ The browser editor is at `http://<server-lan-ip>:8787/`. The firmware consumes
 | [`hardware/bom.csv`](hardware/bom.csv) | Linked major parts, consumable allowances, and the <$50 calculation |
 | [`docs/OPTICS.md`](docs/OPTICS.md) | Optical design, calculations, focus, and combiner tradeoffs |
 | [`docs/BUILD_GUIDE.md`](docs/BUILD_GUIDE.md) | End-to-end print, wire, focus, mount, and test procedure |
+| [`docs/OPTIONS.md`](docs/OPTIONS.md) | Costed compactness, runtime, retention, and contrast options |
+| [`docs/WALKING_EXPERIMENT.md`](docs/WALKING_EXPERIMENT.md) | Clear-away, tether, dummy-head, and controlled gait protocol |
+| [`docs/AI_PROVENANCE.md`](docs/AI_PROVENANCE.md) | Verbatim prompts, generation disclosure, elapsed time, and token accounting |
 
 ## Validate the source
 
 ```sh
 python3 -m unittest discover -s server/tests -v
 python3 tools/check_bom.py
+bash firmware/tests/run_host_tests.sh
 pio run --project-dir firmware
 make -C hardware/cad check-release
+make -C hardware/cad check-previews
 python3 tools/check_repo.py
 ```
 

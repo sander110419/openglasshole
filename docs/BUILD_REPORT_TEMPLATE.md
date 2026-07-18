@@ -11,6 +11,7 @@ information and never include Wi-Fi credentials or API keys.
 - Filament and material:
 - Right or left eye:
 - Glasses temple dimensions:
+- Stationary reference / split-pod walking experiment / other topology:
 
 ## Exact parts
 
@@ -22,9 +23,12 @@ information and never include Wi-Fi credentials or API keys.
 
 ## Measured results
 
-- Optical-head mass:
-- Rear-pod mass:
+- Forward-optics mass:
+- Local controller-pod mass:
+- Total on-glasses mass:
+- Off-body battery-pod mass:
 - Total worn mass:
+- On-glasses fore/aft and lateral centre of mass:
 - Focus-sled position from emitting plane:
 - Eye box at eye plane (width × height):
 - Approximate usable field of view:
@@ -32,8 +36,20 @@ information and never include Wi-Fi credentials or API keys.
 - Indoor brightness / shade / sunlight:
 - Double-image or polarization observations:
 - Prescription type/coating effects (no personal prescription data):
+- Deployed/parked envelope and normal/lower-forward view clearance:
+- Hinge cycles / hard-stop condition / keeper retention / clear-away time:
 - Mount drift / padded-strap snag-release result / lens clearance:
+- Tether connector, routing, voltage drop, and directional release forces:
 - 30-minute and two-hour comfort:
+
+## Controlled gait test (only if every prerequisite passed)
+
+- Stage 0 and Stage 1 evidence:
+- Room / spotter / removed hazards:
+- 30-second / two-minute / five-minute result:
+- Cue stability and gait change:
+- Drift, pressure, cable pull, and clear-away time after each stage:
+- Headache / eye strain / nausea / double vision / balance symptoms:
 
 ## Power test
 

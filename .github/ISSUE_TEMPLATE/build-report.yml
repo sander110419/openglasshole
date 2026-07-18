@@ -25,7 +25,7 @@ body:
     id: optics
     attributes:
       label: Optical and mechanical measurements
-      description: Eye box, focus position, mass, clearance, drift, brightness, ghosting, prescription-lens effects, and comfort.
+      description: Eye box, focus, forward/local-pod/on-glasses/off-body mass, centre of mass, clearance, drift, brightness, ghosting, prescription-lens effects, and comfort.
     validations:
       required: true
   - type: textarea
@@ -33,6 +33,20 @@ body:
     attributes:
       label: Power measurements
       description: Poll interval, contrast, RSSI, average currents, measured runtime, charge time, and method/instrument.
+    validations:
+      required: true
+  - type: textarea
+    id: retention
+    attributes:
+      label: Hinge, mount, and tether evidence
+      description: Record 200-cycle hard-stop/keeper condition, one-hand clear-away time, parked sightline clearance, mount pull result, connector type and directional release forces, cable voltage drop, and body-pod routing.
+    validations:
+      required: true
+  - type: textarea
+    id: gait
+    attributes:
+      label: Controlled gait test, if attempted
+      description: State whether all stationary prerequisites passed. For any empty-level-room test, record spotter/hazards, 30-second/2-minute/5-minute stages, cue stability, gait change, drift, tether pull, and every visual/balance symptom. Write "not attempted" when stationary only.
     validations:
       required: true
   - type: textarea
@@ -48,4 +62,6 @@ body:
       label: Safety acknowledgement
       options:
         - label: I tested stationary, charged off-head, and have not presented this report as certification.
+          required: true
+        - label: I did not intentionally snag-test the device on a person or use it in traffic, on stairs, or in a public route.
           required: true

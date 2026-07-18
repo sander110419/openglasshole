@@ -1,5 +1,5 @@
 /*
- * OpenGlassHole v0.1 mechanical reference
+ * Open OccuCue v0.2 mechanical reference
  *
  * Units: millimetres.
  * Axes in the assembly preview:
@@ -18,7 +18,11 @@ part = "assembly";
 side = "right";              // "right" or "left"; used by assembly preview
 exploded = 0;                 // preview separation, 0 for nominal assembly
 lens_preset = "budget_25x45"; // "budget_25x45" or "compact_23x30"
-show_rear_pod = true;          // assembly preview only
+wear_pose = "deployed";       // "deployed" or "parked"; assembly preview only
+show_rear_pod = false;        // legacy all-on-glasses pod; assembly preview only
+show_controller_pod = true;   // local XIAO + remote body battery experiment
+show_wearer_proxy = true;     // eye, prescription lens, temple, and ray
+hinge_probe_angle = 50;       // developer-only interference selector
 
 // ---------- Printer and fastener allowances ----------
 WALL = 1.2;                   // three 0.4 mm perimeters
@@ -32,17 +36,26 @@ M2_WASHER_T = 0.30;
 M2_NYLOC_H = 2.80;
 M2_THREAD_PROTRUSION = 0.80; // two full 0.4 mm pitches beyond the locknut
 
-// ---------- Concrete v0.1 budget optics ----------
+// ---------- Concrete v0.2 budget optics ----------
 // The required/BOM-default lens is the EUR 1.50, 25 mm / +45 mm biconvex
 // acrylic lens. The optional compact lens shortens the engine but costs more.
 // The budget preset uses the central 48 x 32 viewport on the 28 mm-clear,
 // 45-degree combiner. The compact preset is retained for experiments only.
 LENS_D = lens_preset == "budget_25x45" ? 25.0 : 23.0;
-// Conservative image-side tapered stops trade brightness/eye box for a pane
-// footprint with decentre margin. The exact oblique asserts below govern fit.
-LENS_CLEAR_D = lens_preset == "budget_25x45" ? 15.0 : 10.0;
+// The budget stop is rectangular because the 48 x 32 field is rectangular.
+// Unlike a circular stop, it does not throw away the common pupil-box corners.
+// The compact experiment retains its original circular 10 mm stop.
+LENS_STOP_RECTANGULAR = lens_preset == "budget_25x45";
+LENS_STOP_SIZE = lens_preset == "budget_25x45" ? [16.0, 14.0] : [10.0, 10.0];
+LENS_STOP_MAX_R = LENS_STOP_RECTANGULAR
+                  ? sqrt(pow(LENS_STOP_SIZE[0] / 2, 2)
+                         + pow(LENS_STOP_SIZE[1] / 2, 2))
+                  : LENS_STOP_SIZE[0] / 2;
+LENS_STOP_ANGLE_SAMPLES = 144;
+LENS_RELIEF_MESH_ALLOWANCE = 0.02;
 LENS_FL = lens_preset == "budget_25x45" ? 45.0 : 30.0;
 LENS_TO_COMBINER = 15.0;
+EYE_DATUM_DISTANCE = 32.0;
 LENS_EDGE_T = lens_preset == "budget_25x45" ? 1.2 : 1.5;
 LENS_CENTER_T = 5.0;          // provisional; measure the actual lens
 // Measure each crown height independently from its own rim plane. Never infer
@@ -71,30 +84,43 @@ LENS_REAR_RADIUS = ((LENS_D / 2) * (LENS_D / 2)
                     + LENS_REAR_SAG * LENS_REAR_SAG)
                    / (2 * max(LENS_REAR_SAG, EPS));
 
-// Exact axial clearance between the spherical front surface and the linearly
-// tapered aperture. Its minimum can occur inside the taper, so checking only
-// the narrow aperture edge is not conservative.
+// A hull from the stop profile to the circular pocket contains the same-angle
+// linear radial interpolation used here. Sampling that conservative interior,
+// including the spherical stationary point, lower-bounds the real hard gap.
+function lens_stop_radius(angle) =
+    LENS_STOP_RECTANGULAR
+    ? min((LENS_STOP_SIZE[0] / 2) / max(abs(cos(angle)), EPS),
+          (LENS_STOP_SIZE[1] / 2) / max(abs(sin(angle)), EPS))
+    : LENS_STOP_SIZE[0] / 2;
 function lens_front_surface_x(radius) =
     sqrt(max(0, LENS_FRONT_RADIUS * LENS_FRONT_RADIUS
                 - (LENS_D / 2) * (LENS_D / 2)))
     - sqrt(max(0, LENS_FRONT_RADIUS * LENS_FRONT_RADIUS
                   - radius * radius));
-function lens_taper_slope(plate_t) =
+function lens_taper_slope(plate_t, angle) =
     (plate_t - LENS_PAD_GAP - LENS_FRONT_PAD_LENGTH)
-    / ((LENS_D + LENS_POCKET_DIAMETRAL_CLEAR) / 2 - LENS_CLEAR_D / 2);
-function lens_taper_wall_x(radius, plate_t) =
-    -plate_t + lens_taper_slope(plate_t)
-    * (radius - LENS_CLEAR_D / 2);
-function lens_gap_at_radius(radius, plate_t) =
-    lens_front_surface_x(radius) - lens_taper_wall_x(radius, plate_t);
-function lens_gap_critical_radius(plate_t) =
-    let(slope = lens_taper_slope(plate_t),
+    / ((LENS_D + LENS_POCKET_DIAMETRAL_CLEAR) / 2
+       - lens_stop_radius(angle));
+function lens_taper_wall_x(radius, plate_t, angle) =
+    -plate_t + lens_taper_slope(plate_t, angle)
+    * (radius - lens_stop_radius(angle));
+function lens_gap_at_radius(radius, plate_t, angle) =
+    lens_front_surface_x(radius)
+    - lens_taper_wall_x(radius, plate_t, angle);
+function lens_gap_critical_radius(plate_t, angle) =
+    let(slope = lens_taper_slope(plate_t, angle),
         stationary = slope * LENS_FRONT_RADIUS / sqrt(1 + slope * slope))
-    min(LENS_D / 2, max(LENS_CLEAR_D / 2, stationary));
+    min(LENS_D / 2, max(lens_stop_radius(angle), stationary));
+function lens_min_hard_gap_at_angle(plate_t, angle) =
+    min(lens_gap_at_radius(lens_stop_radius(angle), plate_t, angle),
+        lens_gap_at_radius(LENS_D / 2, plate_t, angle),
+        lens_gap_at_radius(lens_gap_critical_radius(plate_t, angle),
+                           plate_t, angle));
 function lens_min_hard_gap(plate_t) =
-    min(lens_gap_at_radius(LENS_CLEAR_D / 2, plate_t),
-        lens_gap_at_radius(LENS_D / 2, plate_t),
-        lens_gap_at_radius(lens_gap_critical_radius(plate_t), plate_t));
+    min([for (i = [0 : LENS_STOP_ANGLE_SAMPLES - 1])
+         lens_min_hard_gap_at_angle(
+             plate_t, i * 360 / LENS_STOP_ANGLE_SAMPLES)])
+    - LENS_RELIEF_MESH_ALLOWANCE;
 
 FOCUS_MIN = lens_preset == "budget_25x45" ? 38.0 : 24.0;
 FOCUS_MAX = lens_preset == "budget_25x45" ? 52.0 : 34.0;
@@ -137,16 +163,26 @@ OLED_VIEWPORT = [48, 32];       // central columns; firmware viewport must match
 OLED_WINDOW = [11.5, 6.5];    // [Y, Z], deliberately generous
 OLED_WINDOW_OFFSET = [0.0, 0.0];
 OLED_CART_DEPTH = OLED_PCB[0] + 2 * WALL;
-// Square guide body closely tracks the lens tunnel so the OLED cannot yaw.
-OLED_CART_Y = max(OLED_PCB[1] + 2 * WALL + 2 * FIT, LENS_D);
-OLED_CART_Z = max(OLED_PCB[2] + 2 * WALL + 2 * FIT, LENS_D);
+// The old 25 mm square sled wasted volume around a 15.5 x 13 mm PCB. This
+// keyed rectangle preserves the same board pocket and focus lock while making
+// yaw impossible through unlike Y/Z dimensions.
+OLED_CART_Y = OLED_PCB[1] + 2 * WALL + 2 * FIT;
+OLED_CART_Z = 23.0; // leaves 0.8 mm below and 1.05 mm above the focus bolt
 OLED_FACE_X = WALL;
 OLED_LOCK_X = OLED_CART_DEPTH - 1.5;
 OLED_LOCK_Z = OLED_CART_Z / 2 - 2.5;
 
 // ---------- Tunnel ----------
-TUNNEL_INNER = max(LENS_D + 0.5, OLED_CART_Y + 2 * FIT);
+TUNNEL_INNER = LENS_D + 0.5; // square lens-cell throat (legacy alias)
 TUNNEL_OUTER = TUNNEL_INNER + 2 * WALL;
+TUNNEL_BODY_INNER = [OLED_CART_Y + 2 * FIT,
+                     OLED_CART_Z + 2 * FIT];
+TUNNEL_BODY_OUTER = [TUNNEL_BODY_INNER[0] + 2 * WALL,
+                     TUNNEL_BODY_INNER[1] + 2 * WALL];
+// Keep the front pilots and full lens relief in a square cell, then taper only
+// the exterior/cavity needed by the smaller keyed OLED sled.
+TUNNEL_SHOULDER_X = max(8.0, LENS_RELIEF_END_X + 2.0);
+TUNNEL_NECK_X = TUNNEL_SHOULDER_X + 5.0;
 TUNNEL_LENGTH = LENS_PRINCIPAL_FROM_FRONT_RIM + FOCUS_MAX
                 - OLED_FACE_X + OLED_CART_DEPTH + 2.0;
 FOCUS_SLOT_X0 = LENS_PRINCIPAL_FROM_FRONT_RIM + FOCUS_MIN
@@ -189,20 +225,43 @@ DISPLAY_HALF_FIELD_H = atan((OLED_ACTIVE[0]
                              * OLED_VIEWPORT[0] / OLED_RESOLUTION[0])
                             / (2 * LENS_FL));
 DISPLAY_FIELD_SLOPE = tan(DISPLAY_HALF_FIELD_H);
-COMBINER_R = LENS_CLEAR_D / 2;
-// First-order extrema where field rays from y=+/-radius meet the modeled
-// x-y+L=0 pane. A D/cos(45)+2Ltan(theta) sum is not valid for this oblique
-// intersection. Physical stop placement and singlet refraction still require
-// bench verification, hence the deliberately conservative apertures above.
-COMBINER_INTERSECT_POS = (COMBINER_R
-                          + DISPLAY_FIELD_SLOPE * LENS_TO_COMBINER)
-                         / (1 + DISPLAY_FIELD_SLOPE);
-COMBINER_INTERSECT_NEG = (-COMBINER_R
-                          - DISPLAY_FIELD_SLOPE * LENS_TO_COMBINER)
-                         / (1 - DISPLAY_FIELD_SLOPE);
-COMBINER_U_MAX = sqrt(2) * COMBINER_INTERSECT_POS;
-COMBINER_U_MIN = sqrt(2) * COMBINER_INTERSECT_NEG;
+DISPLAY_HALF_FIELD_V = atan((OLED_ACTIVE[1]
+                             * OLED_VIEWPORT[1] / OLED_RESOLUTION[1])
+                            / (2 * LENS_FL));
+DISPLAY_FIELD_SLOPE_V = tan(DISPLAY_HALF_FIELD_V);
+// Sample every rectangular stop corner and field corner. Those samples are
+// the exact extrema for the budget rectangle; the compact circle uses a dense
+// boundary sample. Each ray meets the modeled 45-degree plane x-y+L=0 at the
+// path length below. A D/cos(45)+2Ltan(theta) sum is not valid here.
+LENS_STOP_BOUNDARY = LENS_STOP_RECTANGULAR
+                     ? [[-LENS_STOP_SIZE[0] / 2, -LENS_STOP_SIZE[1] / 2],
+                        [-LENS_STOP_SIZE[0] / 2, LENS_STOP_SIZE[1] / 2],
+                        [LENS_STOP_SIZE[0] / 2, -LENS_STOP_SIZE[1] / 2],
+                        [LENS_STOP_SIZE[0] / 2, LENS_STOP_SIZE[1] / 2]]
+                     : [for (i = [0 : LENS_STOP_ANGLE_SAMPLES - 1])
+                        [LENS_STOP_SIZE[0] / 2
+                         * cos(i * 360 / LENS_STOP_ANGLE_SAMPLES),
+                         LENS_STOP_SIZE[1] / 2
+                         * sin(i * 360 / LENS_STOP_ANGLE_SAMPLES)]];
+COMBINER_FIELD_SAMPLES =
+    [for (stop_point = LENS_STOP_BOUNDARY)
+     for (field_h = [-DISPLAY_FIELD_SLOPE, DISPLAY_FIELD_SLOPE])
+     for (field_v = [-DISPLAY_FIELD_SLOPE_V, DISPLAY_FIELD_SLOPE_V])
+     let(path = (LENS_TO_COMBINER - stop_point[0]) / (1 + field_h),
+         hit_y = stop_point[0] + field_h * path,
+         hit_z = stop_point[1] + field_v * path)
+     [sqrt(2) * hit_y, hit_z]];
+COMBINER_U_MAX = max([for (hit = COMBINER_FIELD_SAMPLES) hit[0]]);
+COMBINER_U_MIN = min([for (hit = COMBINER_FIELD_SAMPLES) hit[0]]);
+COMBINER_V_MAX = max([for (hit = COMBINER_FIELD_SAMPLES) hit[1]]);
+COMBINER_V_MIN = min([for (hit = COMBINER_FIELD_SAMPLES) hit[1]]);
 COMBINER_REQUIRED_U = COMBINER_U_MAX - COMBINER_U_MIN;
+COMBINER_REQUIRED_V = COMBINER_V_MAX - COMBINER_V_MIN;
+STOP_TO_PUPIL_PATH = LENS_TO_COMBINER + EYE_DATUM_DISTANCE;
+COMMON_EYEBOX = [LENS_STOP_SIZE[0]
+                 - 2 * STOP_TO_PUPIL_PATH * DISPLAY_FIELD_SLOPE,
+                 LENS_STOP_SIZE[1]
+                 - 2 * STOP_TO_PUPIL_PATH * DISPLAY_FIELD_SLOPE_V];
 // Signed shift along the frame's local +X basis. It centres the asymmetric
 // ray bundle in the physical 28 mm clear opening (negative for these presets).
 COMBINER_AXIS_SHIFT = (COMBINER_U_MAX + COMBINER_U_MIN) / 2;
@@ -234,6 +293,89 @@ RAIL_BOTTOM_W = 7.5;
 RAIL_TOP_W = 10.5;
 RAIL_H = 3.0;
 QUICK = [17.0, 24.0, 7.0];
+COMPACT_CARRIAGE = [18.0, 24.0, 5.0];
+HINGE_BARREL_D = 8.0;
+HINGE_MOVING_W = 7.6;
+HINGE_SIDE_GAP = 0.30;
+HINGE_AXIS_ABOVE_CARRIAGE = 8.7;
+HINGE_PARK_ANGLE = 100.0;
+HINGE_KNUCKLE_W = (COMPACT_CARRIAGE[0] - HINGE_MOVING_W
+                    - 2 * HINGE_SIDE_GAP) / 2;
+HINGE_FIXED_INNER_X = (HINGE_MOVING_W + 2 * HINGE_SIDE_GAP) / 2;
+ENGINE_CLAMP_X = 8.0;
+
+// Paired radial stops at both travel limits. Angles are measured around the +X
+// pivot from +Y toward +Z. The moving tabs begin at 100 degrees when deployed
+// and rotate over the hinge onto the fixed tabs' 200-degree parked contact
+// planes. Their trailing faces also meet separate fixed 100-degree faces at
+// zero rotation. The path stays above the carriage body. Tabs share load on
+// both hinge ends; the elastomer keeper retains each pose but defines neither
+// limit.
+PARK_STOP_FIXED_ANGLE = 200.0;
+PARK_STOP_MOVING_ANGLE = PARK_STOP_FIXED_ANGLE - HINGE_PARK_ANGLE;
+PARK_STOP_TANGENTIAL_T = 1.2;
+PARK_STOP_ATTACH_R = 3.6;
+PARK_STOP_CONTACT_R = 4.3;
+PARK_STOP_OUTER_R = 5.6;
+PARK_STOP_MOVING_ROOT_X = [2.4, 3.8];
+PARK_STOP_MOVING_WING_X = [3.1, 5.6];
+PARK_STOP_FIXED_SPINE_X = [4.3, 6.5];
+PARK_STOP_BARREL_RADIAL_CLEAR = PARK_STOP_CONTACT_R
+                                - HINGE_BARREL_D / 2;
+PARK_STOP_FIXED_AXIAL_CLEAR = HINGE_FIXED_INNER_X
+                              - PARK_STOP_MOVING_ROOT_X[1];
+PARK_STOP_SPINE_AXIAL_CLEAR = PARK_STOP_FIXED_SPINE_X[0]
+                              - HINGE_MOVING_W / 2;
+PARK_STOP_BRIDGE_AXIAL_CLEAR = PARK_STOP_FIXED_SPINE_X[0]
+                              - ENGINE_CLAMP_X / 2;
+PARK_STOP_MOVING_ROOT_OVERLAP = PARK_STOP_MOVING_ROOT_X[1]
+                                - PARK_STOP_MOVING_WING_X[0];
+PARK_STOP_CONTACT_X_OVERLAP = min(PARK_STOP_MOVING_WING_X[1],
+                                  PARK_STOP_FIXED_SPINE_X[1])
+                              - max(PARK_STOP_MOVING_WING_X[0],
+                                    PARK_STOP_FIXED_SPINE_X[0]);
+PARK_STOP_CONTACT_AREA = 2 * PARK_STOP_CONTACT_X_OVERLAP
+                         * (PARK_STOP_OUTER_R - PARK_STOP_CONTACT_R);
+PARK_STOP_SWEEP_SAMPLES = 200;
+PARK_STOP_SWEEP_ALLOWANCE = 0.02;
+HINGE_BRIDGE_POCKET_X = ENGINE_CLAMP_X + 2 * FIT;
+HINGE_BRIDGE_POCKET_Y0 = 6.5;
+HINGE_BRIDGE_POCKET_Z0 = RAIL_H + FIT;
+function park_stop_moving_body_clear(rotation) =
+    let(angle = PARK_STOP_MOVING_ANGLE + rotation,
+        radial_z = min(PARK_STOP_ATTACH_R * sin(angle),
+                       PARK_STOP_OUTER_R * sin(angle)),
+        tangent_z = min(-PARK_STOP_TANGENTIAL_T * cos(angle), 0))
+    HINGE_AXIS_ABOVE_CARRIAGE + radial_z + tangent_z
+    - COMPACT_CARRIAGE[2];
+PARK_STOP_MIN_SWEEP_BODY_CLEAR =
+    min([for (i = [0 : PARK_STOP_SWEEP_SAMPLES])
+         park_stop_moving_body_clear(
+             HINGE_PARK_ANGLE * i / PARK_STOP_SWEEP_SAMPLES)])
+    - PARK_STOP_SWEEP_ALLOWANCE;
+PARK_STOP_FIXED_BODY_CLEAR = HINGE_AXIS_ABOVE_CARRIAGE
+                             + min(PARK_STOP_ATTACH_R
+                                   * sin(PARK_STOP_FIXED_ANGLE),
+                                   PARK_STOP_OUTER_R
+                                   * sin(PARK_STOP_FIXED_ANGLE))
+                             + min(0, PARK_STOP_TANGENTIAL_T
+                                      * cos(PARK_STOP_FIXED_ANGLE))
+                             - COMPACT_CARRIAGE[2];
+DEPLOYED_STOP_FIXED_ANGLE = PARK_STOP_MOVING_ANGLE;
+DEPLOYED_STOP_FIXED_TANGENT = [-2 * PARK_STOP_TANGENTIAL_T,
+                               -PARK_STOP_TANGENTIAL_T];
+DEPLOYED_STOP_MOVING_TANGENT = [-PARK_STOP_TANGENTIAL_T, 0];
+DEPLOYED_STOP_PLANE_GAP = DEPLOYED_STOP_MOVING_TANGENT[0]
+                          - DEPLOYED_STOP_FIXED_TANGENT[1];
+DEPLOYED_STOP_CONTACT_AREA = PARK_STOP_CONTACT_AREA;
+DEPLOYED_STOP_FIXED_BODY_CLEAR = HINGE_AXIS_ABOVE_CARRIAGE
+    + min(PARK_STOP_ATTACH_R * sin(DEPLOYED_STOP_FIXED_ANGLE),
+          PARK_STOP_OUTER_R * sin(DEPLOYED_STOP_FIXED_ANGLE))
+    + min(DEPLOYED_STOP_FIXED_TANGENT[0]
+          * cos(DEPLOYED_STOP_FIXED_ANGLE),
+          DEPLOYED_STOP_FIXED_TANGENT[1]
+          * cos(DEPLOYED_STOP_FIXED_ANGLE))
+    - COMPACT_CARRIAGE[2];
 
 // ---------- Rear pod ----------
 // Reference protected cell: PKCELL LP503035 maximum 31 x 38 x 5.3 mm.
@@ -285,16 +427,52 @@ REAR_BUTTON_CAGE_H = REAR_USER_BUTTON[2] + REAR_BUTTON_AXIAL_CLEAR
 REAR_ANTENNA = [18.0, 8.0, 1.0]; // provisional XIAO-supplied FPC; measure it
 REAR_ANTENNA_CENTER = [0.0, 25.0];
 
+// ---------- Split-pod walking experiment ----------
+// Keep the XIAO/button/antenna beside the OLED so I2C remains short; carry only
+// protected 1S battery power through the tested breakaway to the body pod.
+CTRL_INNER = [20.5, 29.0, 7.4];
+CTRL_FLOOR = 1.2;
+CTRL_OUTER = [CTRL_INNER[0] + 2 * WALL,
+              CTRL_INNER[1] + 2 * WALL,
+              CTRL_INNER[2] + CTRL_FLOOR + 0.8];
+CTRL_RADIUS = 2.5;
+CTRL_LID_T = 1.4;
+CTRL_LIP_H = 1.0;
+CTRL_LID_EAR_D = 5.5;
+CTRL_LID_BOSS_X = CTRL_OUTER[0] / 2 + CTRL_LID_EAR_D / 2 - 0.8;
+CTRL_STRAP_Y = 8.0;
+CTRL_MCU_CENTER_Y = -2.5;
+CTRL_BUTTON_CENTER = [6.4, 9.5];
+CTRL_ANTENNA_CENTER = [0.0, -7.5];
+CTRL_CABLE_CUTOUT = [6.0, 4.0];
+
+BODY_CELL_INNER = [33.5, 40.5, 8.0];
+BODY_CELL_FLOOR = 1.4;
+BODY_CELL_OUTER = [BODY_CELL_INNER[0] + 2 * WALL,
+                   BODY_CELL_INNER[1] + 2 * WALL,
+                   BODY_CELL_INNER[2] + BODY_CELL_FLOOR + 0.8];
+BODY_CELL_RADIUS = 3.0;
+BODY_CELL_LID_T = 1.6;
+BODY_CELL_LIP_H = 1.2;
+BODY_CELL_LID_EAR_D = 6.0;
+BODY_CELL_LID_BOSS_X = BODY_CELL_OUTER[0] / 2
+                       + BODY_CELL_LID_EAR_D / 2 - 0.8;
+BODY_CELL_SWITCH_CUTOUT = [8.0, 3.5];
+BODY_CELL_CABLE_CUTOUT = [5.0, 4.0];
+BODY_CLIP = [18.0, 30.0, 2.2];
+
 // ---------- Wearable optical-engine brackets ----------
-ENGINE_CLAMP_X = 8.0;
-ENGINE_CLAMP_INNER = TUNNEL_OUTER + 2 * FIT;
-ENGINE_CLAMP_OUTER = ENGINE_CLAMP_INNER + 2 * WALL;
+ENGINE_CLAMP_INNER = [TUNNEL_BODY_OUTER[0] + 2 * FIT,
+                      TUNNEL_BODY_OUTER[1] + 2 * FIT];
+ENGINE_CLAMP_OUTER = [ENGINE_CLAMP_INNER[0] + 2 * WALL,
+                      ENGINE_CLAMP_INNER[1] + 2 * WALL];
 ENGINE_FLANGE_W = 5.5;
-ENGINE_FLANGE_Y = ENGINE_CLAMP_OUTER / 2
+ENGINE_FLANGE_Y = ENGINE_CLAMP_OUTER[0] / 2
                   + ENGINE_FLANGE_W / 2 - 0.8;
 ENGINE_PAD = [20.0, 20.0, 3.0];
 ENGINE_OFFSET_Y = -28.0;       // moves the saddle behind the forward projector
-ENGINE_PAD_Z0 = ENGINE_CLAMP_OUTER / 2 - 1.5;
+ENGINE_PAD_Z0 = ENGINE_CLAMP_OUTER[1] / 2 - 1.5;
+ENGINE_HINGE_Z = ENGINE_CLAMP_OUTER[1] / 2 + HINGE_BARREL_D / 2 - 0.30;
 ENGINE_SEAM_GAP = 0.15;
 BRACKET_PLATE_T = 2.4;
 COMBINER_SOCKET_DEPTH = 1.5;
@@ -313,7 +491,6 @@ FRAME_LOWER_REQUIRED_L = FRAME_STACK_T + COMBINER_CAPTURE_BOSS_T
 
 // ---------- Bench jig ----------
 FOLD_GAP = LENS_TO_COMBINER;
-EYE_DATUM_DISTANCE = 32.0;
 BENCH_BASE_T = 3.0;
 BENCH_SLOT_DEPTH = 1.5;
 BENCH_AXIS_Z = BENCH_BASE_T - BENCH_SLOT_DEPTH + FRAME_LOWEST_V;
@@ -335,8 +512,8 @@ BRACKET_LOCAL_MIN_Y = min([-TUNNEL_OUTER / 2,
                            BRACKET_SUPPORT_MIN_Y,
                            BRACKET_CAPTURE_MIN_Y]);
 
-assert(LENS_CLEAR_D <= LENS_D,
-       "LENS_CLEAR_D cannot exceed the physical lens diameter");
+assert(LENS_STOP_MAX_R <= LENS_D / 2,
+       "Aperture-stop boundary cannot exceed the physical lens radius");
 assert(LENS_FRONT_SAG > 0 && LENS_REAR_SAG > 0
        && LENS_FRONT_SAG < LENS_D / 2 && LENS_REAR_SAG < LENS_D / 2,
        "Enter positive, separately measured front/rear lens crown heights");
@@ -357,11 +534,22 @@ assert(LENS_RETAINER_T >= LENS_PAD_GAP + 0.5
        "Front plates need taper length plus exposed compliant-pad relief");
 assert(lens_preset == "budget_25x45" || lens_preset == "compact_23x30",
        str("Unknown lens_preset: ", lens_preset));
+assert(wear_pose == "deployed" || wear_pose == "parked",
+       str("Unknown wear_pose: ", wear_pose));
 assert(FOCUS_MIN < FOCUS_NOMINAL && FOCUS_NOMINAL < FOCUS_MAX,
        "FOCUS_NOMINAL must lie inside the focus travel");
 assert(COMBINER_CLEAR[0] <= COMBINER_PANE[0]
        && COMBINER_CLEAR[1] <= COMBINER_PANE[1],
        "Combiner clear aperture must fit the physical pane");
+assert(!LENS_STOP_RECTANGULAR || min(COMMON_EYEBOX) >= 6.0,
+       str("Budget full-field common eye box is below 6 x 6 mm: ",
+           COMMON_EYEBOX));
+assert(COMBINER_REQUIRED_U <= COMBINER_CLEAR[0] - 1.0
+       && COMBINER_REQUIRED_V <= COMBINER_CLEAR[1] - 1.0,
+       str("Sampled field corners clip the combiner: required ",
+           COMBINER_REQUIRED_U, " x ", COMBINER_REQUIRED_V,
+           " mm, clear ", COMBINER_CLEAR,
+           " with 0.5 mm minimum edge margin"));
 assert(abs(COMBINER_PANE[0] - COMBINER_PANE[1]) < EPS,
        "The one-piece edge liner currently requires a square combiner pane");
 assert(PANE_LOCATOR_GAP >= COMBINER_PANE[0]
@@ -397,8 +585,48 @@ assert(abs((COMBINER_SOCKET_CENTER_X - COMBINER_BASE_CENTER_X)
            + (COMBINER_SOCKET_CENTER_Y - COMBINER_BASE_CENTER_Y)
            * COMBINER_NORMAL_Y - FRAME_STACK_T / 2) < 0.001,
        "Bracket socket must be centred on the physical frame stack");
-assert(TUNNEL_INNER > OLED_CART_Y,
-       "OLED cartridge does not fit inside the tunnel");
+assert(TUNNEL_BODY_INNER[0] > OLED_CART_Y
+       && TUNNEL_BODY_INNER[1] > OLED_CART_Z,
+       "Keyed OLED cartridge does not fit inside the tunnel body");
+assert(OLED_LOCK_Z - M25_CLEAR_D / 2
+       >= OLED_PCB[2] / 2 + FIT + 0.75,
+       "Focus bolt has too little solid guide below it");
+assert(OLED_CART_Z / 2 - (OLED_LOCK_Z + M25_CLEAR_D / 2) >= 1.0,
+       "Focus bolt has too little cartridge wall above it");
+assert(TUNNEL_NECK_X < FOCUS_SLOT_X0,
+       "Tunnel transition must finish before the focus-lock slot");
+assert(HINGE_KNUCKLE_W >= 4.5,
+       "Compact carriage hinge knuckles are too narrow");
+assert(abs(PARK_STOP_MOVING_ANGLE + HINGE_PARK_ANGLE
+           - PARK_STOP_FIXED_ANGLE) < EPS,
+       "Moving and fixed parked-stop planes do not meet at the parked angle");
+assert(PARK_STOP_BARREL_RADIAL_CLEAR >= FIT,
+       "Parked-stop tongue has too little radial clearance to moving barrel");
+assert(PARK_STOP_FIXED_AXIAL_CLEAR >= FIT,
+       "Moving parked-stop tab has too little clearance to fixed knuckle");
+assert(PARK_STOP_SPINE_AXIAL_CLEAR >= FIT,
+       "Fixed parked-stop spine has too little clearance to moving barrel");
+assert(PARK_STOP_BRIDGE_AXIAL_CLEAR >= FIT,
+       "Fixed stop spine has too little clearance to moving bridge");
+assert(PARK_STOP_MOVING_ROOT_OVERLAP >= 0.6,
+       "Moving stop wing-to-root neck is too thin to print reliably");
+assert(PARK_STOP_CONTACT_X_OVERLAP >= 1.0
+       && PARK_STOP_CONTACT_AREA >= 3.0,
+       "Paired parked-stop contact faces are too small");
+assert(abs(DEPLOYED_STOP_FIXED_ANGLE - PARK_STOP_MOVING_ANGLE) < EPS
+       && abs(DEPLOYED_STOP_PLANE_GAP) < EPS,
+       "Moving and fixed deployed-stop planes do not meet at zero degrees");
+assert(DEPLOYED_STOP_CONTACT_AREA >= 3.0,
+       "Paired deployed-stop contact faces are too small");
+assert(PARK_STOP_MIN_SWEEP_BODY_CLEAR >= 1.0,
+       "Moving parked-stop tabs collide with carriage body during hinge sweep");
+assert(PARK_STOP_FIXED_BODY_CLEAR >= 0.5,
+       "Fixed parked-stop tabs collide with carriage body");
+assert(DEPLOYED_STOP_FIXED_BODY_CLEAR >= 0.5,
+       "Fixed deployed-stop tabs collide with carriage body");
+assert((COMPACT_CARRIAGE[0] - HINGE_BRIDGE_POCKET_X) / 2 >= 4.5
+       && HINGE_BRIDGE_POCKET_Y0 < COMPACT_CARRIAGE[1] / 2,
+       "Deployed bridge pocket leaves too little carriage side wall");
 assert(REAR_INNER[0] > 0 && REAR_INNER[1] > 0 && REAR_INNER[2] > 0,
        "Rear pod cavity dimensions must be positive");
 assert(REAR_INNER[0] >= REAR_CELL[0] + 2 * FIT
@@ -432,6 +660,14 @@ assert(REAR_BUTTON_LEDGE_T >= 0.8 && REAR_BUTTON_LEDGE_W >= 1.0,
 assert(REAR_ANTENNA_CENTER[1] - REAR_ANTENNA[1] / 2
        - (REAR_USER_BUTTON_CENTER[1] + REAR_USER_BUTTON[1] / 2) >= 5.0,
        "Keep at least 5 mm between the metal user button and FPC antenna");
+assert(CTRL_INNER[0] >= REAR_MCU[0] + 2 * REAR_MCU_CLEAR
+       && CTRL_INNER[1] >= REAR_MCU[1] + REAR_USER_BUTTON[1] + 1.0
+       && CTRL_INNER[2] >= REAR_MCU[2] + 1.0,
+       "Controller pod cannot fit XIAO, button, and wiring clearance");
+assert(BODY_CELL_INNER[0] >= REAR_CELL[0] + 2 * REAR_CELL_PAD_CLEAR
+       && BODY_CELL_INNER[1] >= REAR_CELL[1] + 2 * REAR_CELL_PAD_CLEAR
+       && BODY_CELL_INNER[2] >= REAR_CELL[2] + 1.0,
+       "Body battery pod cannot fit the protected cell and padding");
 assert(WEARABLE_ENGINE_Y - TUNNEL_OUTER / 2
        - (PRESCRIPTION_LENS_Y + PRESCRIPTION_LENS_T / 2) >= 2.5,
        "Wearable preview needs 2.5 mm prescription-lens clearance");
@@ -470,6 +706,14 @@ module x_cylinder(d, h, center = false) {
 
 module y_cylinder(d, h, center = false) {
     rotate([90, 0, 0]) cylinder(d = d, h = h, center = center);
+}
+
+module hinge_radial_tab(angle, x_range, radial_range, tangent_range) {
+    rotate([angle, 0, 0])
+        translate([x_range[0], radial_range[0], tangent_range[0]])
+            cube([x_range[1] - x_range[0],
+                  radial_range[1] - radial_range[0],
+                  tangent_range[1] - tangent_range[0]]);
 }
 
 module segment(a, b, d = 0.35) {
@@ -552,22 +796,41 @@ module oled_focus_cartridge() {
 module focus_slot() {
     hull() {
         translate([FOCUS_SLOT_X0, 0, OLED_LOCK_Z])
-            y_cylinder(M25_CLEAR_D, TUNNEL_OUTER + 2, center = true);
+            y_cylinder(M25_CLEAR_D, TUNNEL_BODY_OUTER[0] + 2,
+                       center = true);
         translate([FOCUS_SLOT_X1, 0, OLED_LOCK_Z])
-            y_cylinder(M25_CLEAR_D, TUNNEL_OUTER + 2, center = true);
+            y_cylinder(M25_CLEAR_D, TUNNEL_BODY_OUTER[0] + 2,
+                       center = true);
     }
 }
 
 module lens_front_relief(x0, thickness) {
     transition_h = thickness - LENS_PAD_GAP - LENS_FRONT_PAD_LENGTH;
-    // The tapered image-side stop reaches full pocket diameter before the
-    // printed pad region. A final 1.0 mm cylindrical counterbore prevents the
-    // taper touching the biconvex surface and exposes three distinct lands.
-    translate([x0 - EPS, 0, 0])
-        rotate([0, 90, 0])
-            cylinder(d1 = LENS_CLEAR_D,
-                     d2 = LENS_D + LENS_POCKET_DIAMETRAL_CLEAR,
-                     h = transition_h + EPS);
+    // The budget void lofts from the 16 x 14 rectangular field stop to the
+    // round lens pocket. Keeping the rectangular stop preserves the common
+    // pupil-box corners that a circular stop discards. The compact experiment
+    // retains its original circular cone. The final cylindrical counterbore
+    // prevents hard contact with the biconvex surface.
+    if (LENS_STOP_RECTANGULAR) {
+        hull() {
+            // After this rotation, 2-D [x,y] maps to global [-Z,+Y], so pass
+            // [stop height, stop width] to obtain global [Y,Z] = [16,14].
+            translate([x0 - EPS, 0, 0])
+                rotate([0, 90, 0])
+                    linear_extrude(height = 2 * EPS)
+                        square([LENS_STOP_SIZE[1], LENS_STOP_SIZE[0]],
+                               center = true);
+            translate([x0 + transition_h - EPS, 0, 0])
+                x_cylinder(LENS_D + LENS_POCKET_DIAMETRAL_CLEAR,
+                           2 * EPS);
+        }
+    } else {
+        translate([x0 - EPS, 0, 0])
+            rotate([0, 90, 0])
+                cylinder(d1 = LENS_STOP_SIZE[0],
+                         d2 = LENS_D + LENS_POCKET_DIAMETRAL_CLEAR,
+                         h = transition_h + EPS);
+    }
     translate([x0 + transition_h - EPS, 0, 0])
         x_cylinder(LENS_D + LENS_POCKET_DIAMETRAL_CLEAR,
                    LENS_PAD_GAP + LENS_FRONT_PAD_LENGTH + 2 * EPS);
@@ -598,20 +861,62 @@ module lens_tunnel() {
 
     union() {
         difference() {
-            translate([0, -TUNNEL_OUTER / 2, -TUNNEL_OUTER / 2])
-                cube([TUNNEL_LENGTH, TUNNEL_OUTER, TUNNEL_OUTER]);
+            union() {
+                // Full square lens cell and front fastener pilots.
+                translate([0, -TUNNEL_OUTER / 2, -TUNNEL_OUTER / 2])
+                    cube([TUNNEL_SHOULDER_X,
+                          TUNNEL_OUTER, TUNNEL_OUTER]);
+                // Five-millimetre keyed transition into the close-fitting
+                // rectangular OLED guide. The taper keeps the lens end flat
+                // on the print bed and removes the old full-length box bulk.
+                hull() {
+                    translate([TUNNEL_SHOULDER_X - EPS,
+                               -TUNNEL_OUTER / 2, -TUNNEL_OUTER / 2])
+                        cube([2 * EPS, TUNNEL_OUTER, TUNNEL_OUTER]);
+                    translate([TUNNEL_NECK_X - EPS,
+                               -TUNNEL_BODY_OUTER[0] / 2,
+                               -TUNNEL_BODY_OUTER[1] / 2])
+                        cube([2 * EPS,
+                              TUNNEL_BODY_OUTER[0],
+                              TUNNEL_BODY_OUTER[1]]);
+                }
+                translate([TUNNEL_NECK_X,
+                           -TUNNEL_BODY_OUTER[0] / 2,
+                           -TUNNEL_BODY_OUTER[1] / 2])
+                    cube([TUNNEL_LENGTH - TUNNEL_NECK_X,
+                          TUNNEL_BODY_OUTER[0],
+                          TUNNEL_BODY_OUTER[1]]);
+            }
 
             // Full-diameter relief clears the biconvex lens and centre sag.
-            // It then expands into the circumscribed square tunnel, so upright
-            // FDM creates no inward-facing annular ceiling. The physical stop
-            // is the tapered exterior face of the retainer/bracket instead.
+            // It expands into the square throat before that throat tapers to
+            // the keyed body. The physical field stop remains in the separate
+            // retainer/bracket, not this tunnel shell.
             translate([-EPS, 0, 0])
                 x_cylinder(pocket_d, LENS_RELIEF_END_X + EPS);
 
-            // Open square light tunnel and focus-cartridge space after relief.
+            // Open square throat, matched internal transition, and keyed body.
             translate([LENS_RELIEF_END_X,
                        -TUNNEL_INNER / 2, -TUNNEL_INNER / 2])
-                cube([TUNNEL_LENGTH, TUNNEL_INNER, TUNNEL_INNER]);
+                cube([TUNNEL_SHOULDER_X - LENS_RELIEF_END_X + EPS,
+                      TUNNEL_INNER, TUNNEL_INNER]);
+            hull() {
+                translate([TUNNEL_SHOULDER_X - EPS,
+                           -TUNNEL_INNER / 2, -TUNNEL_INNER / 2])
+                    cube([2 * EPS, TUNNEL_INNER, TUNNEL_INNER]);
+                translate([TUNNEL_NECK_X - EPS,
+                           -TUNNEL_BODY_INNER[0] / 2,
+                           -TUNNEL_BODY_INNER[1] / 2])
+                    cube([2 * EPS,
+                          TUNNEL_BODY_INNER[0],
+                          TUNNEL_BODY_INNER[1]]);
+            }
+            translate([TUNNEL_NECK_X - EPS,
+                       -TUNNEL_BODY_INNER[0] / 2,
+                       -TUNNEL_BODY_INNER[1] / 2])
+                cube([TUNNEL_LENGTH - TUNNEL_NECK_X + 2 * EPS,
+                      TUNNEL_BODY_INNER[0],
+                      TUNNEL_BODY_INNER[1]]);
 
             // A long through-bolt and washers clamp the cartridge after focus.
             focus_slot();
@@ -794,6 +1099,99 @@ module quick_release() {
     }
 }
 
+module compact_carriage() {
+    central_gap = HINGE_MOVING_W + 2 * HINGE_SIDE_GAP;
+    axis_z = HINGE_AXIS_ABOVE_CARRIAGE;
+    difference() {
+        union() {
+            translate([-COMPACT_CARRIAGE[0] / 2,
+                       -COMPACT_CARRIAGE[1] / 2, 0])
+                cube(COMPACT_CARRIAGE);
+
+            // Two fixed knuckles accept the engine clamp's central leaf. The
+            // barrels overlap the body by 0.3 mm for a manifold print.
+            for (sx = [-1, 1])
+                translate([sx * (central_gap / 2 + HINGE_KNUCKLE_W / 2),
+                           0, axis_z])
+                    x_cylinder(HINGE_BARREL_D, HINGE_KNUCKLE_W,
+                               center = true);
+
+            // Twin fixed stop spines at both travel limits. Each overlaps its
+            // fixed knuckle radially and starts 0.50 mm outside the moving
+            // barrel. The deployed pair meets the moving wings' trailing
+            // planes at 100 degrees; the parked pair meets their leading
+            // radial planes at 200 degrees. Two 1.30 x 1.30 mm patches share
+            // the load at each limit.
+            translate([0, 0, axis_z])
+                for (sx = [-1, 1])
+                    scale([sx, 1, 1]) {
+                        hinge_radial_tab(
+                            DEPLOYED_STOP_FIXED_ANGLE,
+                            PARK_STOP_FIXED_SPINE_X,
+                            [PARK_STOP_ATTACH_R, PARK_STOP_OUTER_R],
+                            DEPLOYED_STOP_FIXED_TANGENT);
+                        hinge_radial_tab(
+                            PARK_STOP_FIXED_ANGLE,
+                            PARK_STOP_FIXED_SPINE_X,
+                            [PARK_STOP_ATTACH_R, PARK_STOP_OUTER_R],
+                            [0, PARK_STOP_TANGENTIAL_T]);
+                    }
+
+            // Outboard front/rear keeper pegs. A short silicone/TPU loop tied
+            // through the moving leaf is shifted between these two pegs to
+            // retain deployed and parked poses positively.
+            for (sy = [-1, 1]) {
+                translate([COMPACT_CARRIAGE[0] / 2 - 0.3,
+                           sy * 8.0, 3.2])
+                    x_cylinder(3.0, 3.0);
+                translate([COMPACT_CARRIAGE[0] / 2 + 2.3,
+                           sy * 8.0, 3.2])
+                    x_cylinder(4.2, 0.8);
+            }
+
+            // The elastomer keeper described in the build guide pulls the
+            // moving tabs against one fixed stop pair or the other; it never
+            // substitutes for either hard contact plane.
+        }
+
+        translate([0, 0, -EPS]) dovetail_void(COMPACT_CARRIAGE[1] + 2 * EPS);
+
+        // One continuous M2.5 pivot through both fixed knuckles and leaf.
+        translate([-COMPACT_CARRIAGE[0] / 2 - EPS, 0, axis_z])
+            x_cylinder(M25_CLEAR_D,
+                       COMPACT_CARRIAGE[0] + 2 * EPS);
+
+        // Give the moving barrel 0.35 mm below-body swing clearance.
+        translate([-central_gap / 2,
+                   -HINGE_BARREL_D / 2 - FIT,
+                   COMPACT_CARRIAGE[2] - 0.45])
+            cube([central_gap,
+                  HINGE_BARREL_D + 2 * FIT,
+                  1.0]);
+
+        // The deployed bridge occupies the front/top centre of the carriage.
+        // Open that roof down to the existing dovetail void so the radial stop
+        // faces, rather than accidental bridge/body overlap, define 0 degrees.
+        translate([-HINGE_BRIDGE_POCKET_X / 2,
+                   HINGE_BRIDGE_POCKET_Y0,
+                   HINGE_BRIDGE_POCKET_Z0])
+            cube([HINGE_BRIDGE_POCKET_X,
+                  COMPACT_CARRIAGE[1] / 2 - HINGE_BRIDGE_POCKET_Y0 + EPS,
+                  COMPACT_CARRIAGE[2] - HINGE_BRIDGE_POCKET_Z0 + EPS]);
+
+        // Side-access M2.5 set screw retains the original fore/aft rail
+        // adjustment without the old cross adapter and four attachment screws.
+        translate([RAIL_BOTTOM_W / 2 + FIT - EPS,
+                   COMPACT_CARRIAGE[1] / 2 - 4.0, 1.7])
+            x_cylinder(M25_PILOT_D,
+                       COMPACT_CARRIAGE[0] / 2
+                       - (RAIL_BOTTOM_W / 2 + FIT) + 2 * EPS);
+        translate([COMPACT_CARRIAGE[0] / 2 - 1.2,
+                   COMPACT_CARRIAGE[1] / 2 - 4.0, 1.7])
+            x_cylinder(5.2, 1.2 + EPS);
+    }
+}
+
 module mount_adapter() {
     size = [20.0, 20.0, 3.0];
     difference() {
@@ -819,14 +1217,15 @@ module mount_adapter() {
 module engine_square_ring() {
     difference() {
         translate([-ENGINE_CLAMP_X / 2,
-                   -ENGINE_CLAMP_OUTER / 2,
-                   -ENGINE_CLAMP_OUTER / 2])
-            cube([ENGINE_CLAMP_X, ENGINE_CLAMP_OUTER, ENGINE_CLAMP_OUTER]);
+                   -ENGINE_CLAMP_OUTER[0] / 2,
+                   -ENGINE_CLAMP_OUTER[1] / 2])
+            cube([ENGINE_CLAMP_X,
+                  ENGINE_CLAMP_OUTER[0], ENGINE_CLAMP_OUTER[1]]);
         translate([-ENGINE_CLAMP_X / 2 - EPS,
-                   -ENGINE_CLAMP_INNER / 2,
-                   -ENGINE_CLAMP_INNER / 2])
+                   -ENGINE_CLAMP_INNER[0] / 2,
+                   -ENGINE_CLAMP_INNER[1] / 2])
             cube([ENGINE_CLAMP_X + 2 * EPS,
-                  ENGINE_CLAMP_INNER, ENGINE_CLAMP_INNER]);
+                  ENGINE_CLAMP_INNER[0], ENGINE_CLAMP_INNER[1]]);
     }
 }
 
@@ -837,11 +1236,11 @@ module engine_cradle() {
             intersection() {
                 engine_square_ring();
                 translate([-ENGINE_CLAMP_X / 2 - EPS,
-                           -ENGINE_CLAMP_OUTER / 2 - EPS,
-                           -ENGINE_CLAMP_OUTER / 2 - EPS])
+                           -ENGINE_CLAMP_OUTER[0] / 2 - EPS,
+                           -ENGINE_CLAMP_OUTER[1] / 2 - EPS])
                     cube([ENGINE_CLAMP_X + 2 * EPS,
-                          ENGINE_CLAMP_OUTER + 2 * EPS,
-                          ENGINE_CLAMP_OUTER / 2
+                          ENGINE_CLAMP_OUTER[0] + 2 * EPS,
+                          ENGINE_CLAMP_OUTER[1] / 2
                           - ENGINE_SEAM_GAP + EPS]);
             }
 
@@ -870,11 +1269,11 @@ module engine_clamp() {
             intersection() {
                 engine_square_ring();
                 translate([-ENGINE_CLAMP_X / 2 - EPS,
-                           -ENGINE_CLAMP_OUTER / 2 - EPS,
+                           -ENGINE_CLAMP_OUTER[0] / 2 - EPS,
                            ENGINE_SEAM_GAP])
                     cube([ENGINE_CLAMP_X + 2 * EPS,
-                          ENGINE_CLAMP_OUTER + 2 * EPS,
-                          ENGINE_CLAMP_OUTER / 2
+                          ENGINE_CLAMP_OUTER[0] + 2 * EPS,
+                          ENGINE_CLAMP_OUTER[1] / 2
                           - ENGINE_SEAM_GAP + EPS]);
             }
             for (sy = [-1, 1])
@@ -884,22 +1283,43 @@ module engine_clamp() {
                     cube([ENGINE_CLAMP_X, ENGINE_FLANGE_W,
                           3.0 - ENGINE_SEAM_GAP]);
 
-            // Rearward top bridge puts the glasses saddle near pupil height
-            // while the projector remains forward of the temple hinge.
+            // Rearward bridge terminates in the moving centre leaf of the
+            // clear-away hinge. It replaces the old 20 x 20 mm pad, separate
+            // cross adapter, and four pad/adapter screws.
             hull() {
                 translate([-ENGINE_CLAMP_X / 2,
-                           -ENGINE_CLAMP_OUTER / 2,
-                           ENGINE_CLAMP_OUTER / 2 - 3.0])
+                           -ENGINE_CLAMP_OUTER[0] / 2,
+                           ENGINE_CLAMP_OUTER[1] / 2 - 3.0])
                     cube([ENGINE_CLAMP_X, 4.0, 3.0]);
-                translate([-8.0,
-                           ENGINE_OFFSET_Y + ENGINE_PAD[1] / 2 - 4.0,
-                           ENGINE_PAD_Z0])
-                    cube([16.0, 4.0, ENGINE_PAD[2]]);
+                translate([-HINGE_MOVING_W / 2,
+                           ENGINE_OFFSET_Y + 2.0,
+                           ENGINE_HINGE_Z - 2.0])
+                    cube([HINGE_MOVING_W, 4.0, 4.0]);
             }
-            translate([-ENGINE_PAD[0] / 2,
-                       ENGINE_OFFSET_Y - ENGINE_PAD[1] / 2,
-                       ENGINE_PAD_Z0])
-                cube(ENGINE_PAD);
+            translate([0, ENGINE_OFFSET_Y, ENGINE_HINGE_Z])
+                x_cylinder(HINGE_BARREL_D, HINGE_MOVING_W,
+                           center = true);
+
+            // One paired set of moving root/wing tabs serves both limits. The
+            // root overlaps the moving barrel but remains 0.30 mm inside the
+            // fixed knuckles; the wider wing begins beyond the barrel radius.
+            // At zero rotation its trailing faces contact the fixed deployed
+            // spines. At +100 degrees its leading faces meet the fixed parked
+            // spines. The keeper retains contact but is not the geometric stop.
+            translate([0, ENGINE_OFFSET_Y, ENGINE_HINGE_Z])
+                for (sx = [-1, 1])
+                    scale([sx, 1, 1]) {
+                        hinge_radial_tab(
+                            PARK_STOP_MOVING_ANGLE,
+                            PARK_STOP_MOVING_ROOT_X,
+                            [PARK_STOP_ATTACH_R, PARK_STOP_OUTER_R],
+                            DEPLOYED_STOP_MOVING_TANGENT);
+                        hinge_radial_tab(
+                            PARK_STOP_MOVING_ANGLE,
+                            PARK_STOP_MOVING_WING_X,
+                            [PARK_STOP_CONTACT_R, PARK_STOP_OUTER_R],
+                            DEPLOYED_STOP_MOVING_TANGENT);
+                    }
         }
 
         for (sy = [-1, 1])
@@ -908,20 +1328,28 @@ module engine_clamp() {
                 cylinder(d = M2_CLEAR_D,
                          h = 3.0 - ENGINE_SEAM_GAP + 2 * EPS);
 
-        // Y-hole pair mates to mount_adapter below the offset pad.
-        for (sy = [-1, 1])
-            translate([0, ENGINE_OFFSET_Y + sy * 6.0,
-                       ENGINE_PAD_Z0 - EPS])
-                cylinder(d = M2_CLEAR_D,
-                         h = ENGINE_PAD[2] + 2 * EPS);
+        translate([-HINGE_MOVING_W / 2 - EPS,
+                   ENGINE_OFFSET_Y, ENGINE_HINGE_Z])
+            x_cylinder(M25_CLEAR_D, HINGE_MOVING_W + 2 * EPS);
 
-        // Underside pockets clear up to 0.8 mm of protruding M2 socket heads
-        // from the preassembled adapter-to-carriage screws.
-        for (sx = [-1, 1])
-            translate([sx * 6.0, ENGINE_OFFSET_Y,
-                       ENGINE_PAD_Z0 - EPS])
-                cylinder(d = 4.8, h = 1.0 + EPS);
+        // Tie the replaceable keeper loop through this protected bridge hole.
+        translate([-HINGE_MOVING_W / 2 - EPS,
+                   ENGINE_OFFSET_Y + 6.0, ENGINE_HINGE_Z + 1.0])
+            x_cylinder(2.2, HINGE_MOVING_W + 2 * EPS);
 
+    }
+}
+
+// Developer probe used by validate.sh. A valid 0..100 degree sweep has an
+// empty volumetric intersection; one degree beyond either hard limit must
+// produce a solid intersection at the paired stop faces.
+module hinge_interference_probe() {
+    intersection() {
+        compact_carriage();
+        translate([0, 0, HINGE_AXIS_ABOVE_CARRIAGE])
+            rotate([hinge_probe_angle, 0, 0])
+                translate([0, -ENGINE_OFFSET_Y, -ENGINE_HINGE_Z])
+                    engine_clamp();
     }
 }
 
@@ -1236,6 +1664,223 @@ module rear_pod_lid() {
     }
 }
 
+// ---------- Split controller and body-battery pods ----------
+
+module controller_strap_ears() {
+    ear_x = CTRL_OUTER[0] / 2 + 2.5 - REAR_TAB_OVERLAP;
+    for (sy = [-1, 1])
+        for (sx = [-1, 1])
+            translate([sx * ear_x - 2.5, sy * CTRL_STRAP_Y - 4.0, 0])
+                cube([5.0, 8.0, 2.8]);
+}
+
+module controller_lid_ears(height) {
+    for (sx = [-1, 1])
+        translate([sx * CTRL_LID_BOSS_X, 0, 0])
+            cylinder(d = CTRL_LID_EAR_D, h = height);
+}
+
+module controller_pod() {
+    difference() {
+        union() {
+            difference() {
+                rounded_box_xy(CTRL_OUTER, CTRL_RADIUS);
+                translate([0, 0, CTRL_FLOOR])
+                    linear_extrude(height = CTRL_OUTER[2] + EPS)
+                        rounded_rect_2d(CTRL_INNER,
+                                        max(0.8, CTRL_RADIUS - WALL));
+            }
+            controller_lid_ears(CTRL_OUTER[2]);
+            controller_strap_ears();
+
+            // Four low rails locate the XIAO without hiding its USB end.
+            for (sx = [-1, 1])
+                translate([sx * (REAR_MCU[0] / 2 + REAR_MCU_CLEAR + 0.5),
+                           CTRL_MCU_CENTER_Y - 5.5,
+                           CTRL_FLOOR - 0.2])
+                    cube([1.0, 13.0, 2.0]);
+        }
+
+        for (sx = [-1, 1])
+            translate([sx * CTRL_LID_BOSS_X, 0, -EPS])
+                cylinder(d = M2_PILOT_D,
+                         h = CTRL_OUTER[2] + 2 * EPS);
+
+        ear_x = CTRL_OUTER[0] / 2 + 2.5 - REAR_TAB_OVERLAP;
+        for (sy = [-1, 1])
+            for (sx = [-1, 1])
+                translate([sx * ear_x - 1.0,
+                           sy * CTRL_STRAP_Y - STRAP_WIDTH / 2, -EPS])
+                    cube([2.0, STRAP_WIDTH, 2.8 + 2 * EPS]);
+
+        // USB faces rearward; the short OLED harness and two-wire protected
+        // battery tether share the strain-relieved forward opening.
+        translate([-REAR_USB_CUTOUT[0] / 2,
+                   -CTRL_OUTER[1] / 2 - EPS, CTRL_FLOOR + 0.4])
+            cube([REAR_USB_CUTOUT[0], 2 * WALL + 2 * EPS,
+                  REAR_USB_CUTOUT[1]]);
+        translate([-CTRL_CABLE_CUTOUT[0] / 2,
+                   CTRL_OUTER[1] / 2 - WALL - EPS,
+                   CTRL_OUTER[2] - CTRL_CABLE_CUTOUT[1]])
+            cube([CTRL_CABLE_CUTOUT[0], 2 * WALL + 2 * EPS,
+                  CTRL_CABLE_CUTOUT[1] + EPS]);
+    }
+}
+
+module controller_lid_guides() {
+    guide_t = 0.8;
+    cage_h = REAR_USER_BUTTON[2] + REAR_BUTTON_AXIAL_CLEAR
+             + REAR_BUTTON_RETAINER_T + REAR_BUTTON_LEDGE_T;
+    cavity = [REAR_USER_BUTTON[0] + 2 * FIT,
+              REAR_USER_BUTTON[1] + 2 * FIT];
+    button_y0 = CTRL_BUTTON_CENTER[1] - cavity[1] / 2;
+
+    // Antenna guide rails keep the FPC against the plastic lid.
+    for (sy = [-1, 1])
+        translate([CTRL_ANTENNA_CENTER[0] - REAR_ANTENNA[0] / 2,
+                   CTRL_ANTENNA_CENTER[1]
+                   + sy * (REAR_ANTENNA[1] / 2 + FIT + guide_t / 2)
+                   - guide_t / 2, -1.0])
+            cube([REAR_ANTENNA[0], guide_t, 1.0 + EPS]);
+
+    // Three-sided long-stem button cage with the same removable retainer used
+    // by the integrated pod.
+    for (sx = [-1, 1])
+        translate([CTRL_BUTTON_CENTER[0]
+                   + sx * (REAR_USER_BUTTON[0] / 2 + FIT + guide_t / 2)
+                   - guide_t / 2,
+                   button_y0, -cage_h])
+            cube([guide_t, cavity[1], cage_h + EPS]);
+    translate([CTRL_BUTTON_CENTER[0] - cavity[0] / 2 - 0.25,
+               button_y0 - guide_t, -cage_h])
+        cube([cavity[0] + 0.5, guide_t, cage_h + EPS]);
+    for (sx = [-1, 1])
+        translate([CTRL_BUTTON_CENTER[0]
+                   + sx * (cavity[0] / 2 - REAR_BUTTON_LEDGE_W / 2)
+                   - REAR_BUTTON_LEDGE_W / 2,
+                   button_y0, -cage_h])
+            cube([REAR_BUTTON_LEDGE_W, cavity[1], REAR_BUTTON_LEDGE_T]);
+}
+
+module controller_pod_lid() {
+    lip_outer = [CTRL_INNER[0] - 2 * FIT,
+                 CTRL_INNER[1] - 2 * FIT];
+    lip_inner = [lip_outer[0] - 2.0, lip_outer[1] - 2.0];
+    difference() {
+        union() {
+            linear_extrude(height = CTRL_LID_T)
+                rounded_rect_2d(CTRL_OUTER, CTRL_RADIUS);
+            controller_lid_ears(CTRL_LID_T);
+            translate([0, 0, -CTRL_LIP_H])
+                linear_extrude(height = CTRL_LIP_H) difference() {
+                    rounded_rect_2d(lip_outer, max(0.8, CTRL_RADIUS - WALL));
+                    rounded_rect_2d(lip_inner, max(0.6, CTRL_RADIUS - 2 * WALL));
+                }
+            controller_lid_guides();
+        }
+
+        for (sx = [-1, 1])
+            translate([sx * CTRL_LID_BOSS_X, 0, -CTRL_LIP_H - EPS])
+                cylinder(d = M2_CLEAR_D,
+                         h = CTRL_LIP_H + CTRL_LID_T + 2 * EPS);
+        translate([CTRL_BUTTON_CENTER[0], CTRL_BUTTON_CENTER[1],
+                   -CTRL_LIP_H - EPS])
+            cylinder(d = REAR_USER_BUTTON_HOLE_D,
+                     h = CTRL_LIP_H + CTRL_LID_T + 2 * EPS);
+        translate([-CTRL_CABLE_CUTOUT[0] / 2,
+                   CTRL_OUTER[1] / 2 - 2.0, -CTRL_LIP_H - EPS])
+            cube([CTRL_CABLE_CUTOUT[0], 3.0,
+                  CTRL_LIP_H + CTRL_LID_T + 2 * EPS]);
+    }
+}
+
+module body_battery_lid_ears(height) {
+    for (sx = [-1, 1])
+        translate([sx * BODY_CELL_LID_BOSS_X, 0, 0])
+            cylinder(d = BODY_CELL_LID_EAR_D, h = height);
+}
+
+module body_battery_pod() {
+    difference() {
+        union() {
+            difference() {
+                rounded_box_xy(BODY_CELL_OUTER, BODY_CELL_RADIUS);
+                translate([0, 0, BODY_CELL_FLOOR])
+                    linear_extrude(height = BODY_CELL_OUTER[2] + EPS)
+                        rounded_rect_2d(BODY_CELL_INNER,
+                                        max(1.0, BODY_CELL_RADIUS - WALL));
+            }
+            body_battery_lid_ears(BODY_CELL_OUTER[2]);
+
+            // Low cell guides leave space for removable closed-cell padding.
+            for (sx = [-1, 1])
+                translate([sx * (REAR_CELL[0] / 2
+                                  + REAR_CELL_PAD_CLEAR + 0.5),
+                           -REAR_CELL[1] / 2 + 2.0,
+                           BODY_CELL_FLOOR - 0.2])
+                    cube([1.0, REAR_CELL[1] - 4.0, 2.0]);
+        }
+
+        for (sx = [-1, 1])
+            translate([sx * BODY_CELL_LID_BOSS_X, 0, -EPS])
+                cylinder(d = M2_PILOT_D,
+                         h = BODY_CELL_OUTER[2] + 2 * EPS);
+        translate([BODY_CELL_OUTER[0] / 2 - WALL - EPS,
+                   -BODY_CELL_SWITCH_CUTOUT[0] / 2,
+                   BODY_CELL_FLOOR + 1.5])
+            cube([2 * WALL + 2 * EPS,
+                  BODY_CELL_SWITCH_CUTOUT[0],
+                  BODY_CELL_SWITCH_CUTOUT[1]]);
+        translate([-BODY_CELL_CABLE_CUTOUT[0] / 2,
+                   BODY_CELL_OUTER[1] / 2 - WALL - EPS,
+                   BODY_CELL_OUTER[2] - BODY_CELL_CABLE_CUTOUT[1]])
+            cube([BODY_CELL_CABLE_CUTOUT[0], 2 * WALL + 2 * EPS,
+                  BODY_CELL_CABLE_CUTOUT[1] + EPS]);
+    }
+}
+
+module body_battery_pod_lid() {
+    lip_outer = [BODY_CELL_INNER[0] - 2 * FIT,
+                 BODY_CELL_INNER[1] - 2 * FIT];
+    lip_inner = [lip_outer[0] - 2.0, lip_outer[1] - 2.0];
+    difference() {
+        union() {
+            linear_extrude(height = BODY_CELL_LID_T)
+                rounded_rect_2d(BODY_CELL_OUTER, BODY_CELL_RADIUS);
+            body_battery_lid_ears(BODY_CELL_LID_T);
+            translate([0, 0, -BODY_CELL_LIP_H])
+                linear_extrude(height = BODY_CELL_LIP_H) difference() {
+                    rounded_rect_2d(lip_outer,
+                                    max(1.0, BODY_CELL_RADIUS - WALL));
+                    rounded_rect_2d(lip_inner,
+                                    max(0.8, BODY_CELL_RADIUS - 2 * WALL));
+                }
+
+            // Raised spring clip accepts a collar edge or pocket hem. It is a
+            // convenience retainer, never part of the tether breakaway claim.
+            translate([-BODY_CLIP[0] / 2,
+                       -BODY_CLIP[1] / 2,
+                       BODY_CELL_LID_T + 2.0])
+                cube(BODY_CLIP);
+            translate([-BODY_CLIP[0] / 2,
+                       -BODY_CLIP[1] / 2,
+                       BODY_CELL_LID_T])
+                cube([BODY_CLIP[0], 3.0, 4.2]);
+        }
+
+        for (sx = [-1, 1])
+            translate([sx * BODY_CELL_LID_BOSS_X, 0,
+                       -BODY_CELL_LIP_H - EPS])
+                cylinder(d = M2_CLEAR_D,
+                         h = BODY_CELL_LIP_H + BODY_CELL_LID_T + 2 * EPS);
+        translate([-BODY_CELL_CABLE_CUTOUT[0] / 2,
+                   BODY_CELL_OUTER[1] / 2 - 2.0,
+                   -BODY_CELL_LIP_H - EPS])
+            cube([BODY_CELL_CABLE_CUTOUT[0], 3.0,
+                  BODY_CELL_LIP_H + BODY_CELL_LID_T + 2 * EPS]);
+    }
+}
+
 // ---------- Fit coupon and cutting template ----------
 
 module fit_coupon() {
@@ -1443,8 +2088,22 @@ module preview_rear_straps(temple_x, pod_x, pod_y, pod_z) {
                 cube([strap_x1 - strap_x0, STRAP_WIDTH, 0.6]);
 }
 
+module preview_controller_straps(temple_x, pod_x, pod_y, pod_z) {
+    ear_x = CTRL_OUTER[0] / 2 + 2.5 - REAR_TAB_OVERLAP;
+    near_slot_x = pod_x - ear_x;
+    strap_x0 = min(temple_x, near_slot_x);
+    strap_x1 = max(temple_x, near_slot_x);
+    for (station = [-CTRL_STRAP_Y, CTRL_STRAP_Y])
+        color([0.1, 0.1, 0.1, 0.65])
+            translate([strap_x0,
+                       pod_y + station - STRAP_WIDTH / 2,
+                       pod_z + 1.0])
+                cube([strap_x1 - strap_x0, STRAP_WIDTH, 0.6]);
+}
+
 module assembly_preview() {
     hand = side == "left" ? -1 : 1;
+    pose_angle = wear_pose == "parked" ? HINGE_PARK_ANGLE : 0;
     engine_x = 15.0;
     engine_y = WEARABLE_ENGINE_Y;
     engine_z = 0.0;
@@ -1452,46 +2111,58 @@ module assembly_preview() {
     mount_y = engine_y + ENGINE_OFFSET_Y;
     comb_center = [0, engine_y, engine_z]; // chief-ray intersection, not frame centre
     cart_x = LENS_PRINCIPAL_FROM_FRONT_RIM + FOCUS_NOMINAL - OLED_FACE_X;
-    adapter_z = engine_z + ENGINE_PAD_Z0 - 3.0;
-    quick_z = adapter_z - QUICK[2];
-    saddle_z = quick_z - SADDLE[2];
+    carriage_z = ENGINE_HINGE_Z - HINGE_AXIS_ABOVE_CARRIAGE;
+    saddle_z = carriage_z - SADDLE[2];
     rear_x = clamp_x + REAR_OUTER[0] / 2 + 9.0;
     rear_y = -35.0;
     rear_z = saddle_z + 0.4;
+    ctrl_x = clamp_x + CTRL_OUTER[0] / 2 + 9.0;
+    ctrl_y = -24.0;
+    ctrl_z = saddle_z + 0.4;
 
     assert(abs(rear_x - REAR_OUTER[0] / 2
                - (clamp_x + SADDLE[0] / 2)) < EPS,
            "Rear pod is intended to sit tangent and outboard of the saddle");
 
-    preview_eye();
-    preview_prescription_lens();
+    if (show_wearer_proxy) {
+        preview_eye();
+        preview_prescription_lens();
+    }
 
     // Mirror the complete optical engine for left-eye use.
     scale([hand, 1, 1]) {
-        preview_temple(clamp_x, saddle_z, rear_y);
+        if (show_wearer_proxy)
+            preview_temple(clamp_x, saddle_z, rear_y);
 
-        translate([engine_x, engine_y, engine_z])
-            color("#222222") lens_tunnel();
-        translate([engine_x + cart_x + exploded, engine_y, engine_z])
-            color("#3a3a3a") oled_focus_cartridge();
-        translate([engine_x - exploded, engine_y, engine_z])
-            color("#303030") combiner_bracket();
+        // The complete optical engine rotates around the compact carriage's
+        // X-axis hinge. At 100 degrees it parks above the primary sightline;
+        // the carriage, saddle, temple, and optional rear pod stay fixed.
+        translate([clamp_x, mount_y, ENGINE_HINGE_Z])
+            rotate([pose_angle, 0, 0])
+                translate([-clamp_x, -mount_y, -ENGINE_HINGE_Z]) {
+                    translate([engine_x, engine_y, engine_z])
+                        color("#222222") lens_tunnel();
+                    translate([engine_x + cart_x + exploded,
+                               engine_y, engine_z])
+                        color("#3a3a3a") oled_focus_cartridge();
+                    translate([engine_x - exploded, engine_y, engine_z])
+                        color("#303030") combiner_bracket();
 
-        translate([engine_x + COMBINER_BASE_CENTER_X,
-                   engine_y + COMBINER_BASE_CENTER_Y, engine_z])
-            rotate([90, 0, COMBINER_ANGLE])
-                combiner_stack_preview(exploded);
+                    translate([engine_x + COMBINER_BASE_CENTER_X,
+                               engine_y + COMBINER_BASE_CENTER_Y, engine_z])
+                        rotate([90, 0, COMBINER_ANGLE])
+                            combiner_stack_preview(exploded);
 
-        // Complete printable chain: split collar, cross adapter, locked
-        // carriage, dovetail saddle, then padded hook-and-loop straps.
-        translate([clamp_x, engine_y, engine_z])
-            color("#404040") engine_cradle();
-        translate([clamp_x, engine_y, engine_z + exploded])
-            color("#555555") engine_clamp();
-        translate([clamp_x, mount_y, adapter_z - exploded])
-            color("#505050") mount_adapter();
-        translate([clamp_x, mount_y, quick_z - 2 * exploded])
-            color("#555555") quick_release();
+                    translate([clamp_x, engine_y, engine_z])
+                        color("#404040") engine_cradle();
+                    translate([clamp_x, engine_y, engine_z + exploded])
+                        color("#555555") engine_clamp();
+                }
+
+        // One rail carriage now supplies fore/aft adjustment, pivot, two hard
+        // stops, and keeper pegs. This removes the old cross adapter.
+        translate([clamp_x, mount_y, carriage_z - exploded])
+            color("#505050") compact_carriage();
         translate([clamp_x, mount_y, saddle_z - 3 * exploded])
             color("#303030") temple_saddle();
 
@@ -1511,27 +2182,92 @@ module assembly_preview() {
                 color("#555555") rear_button_retainer();
             preview_rear_straps(clamp_x, rear_x, rear_y, rear_z);
         }
+
+        if (show_controller_pod) {
+            translate([ctrl_x, ctrl_y, ctrl_z])
+                color("#242424") controller_pod();
+            translate([ctrl_x, ctrl_y,
+                       ctrl_z + CTRL_OUTER[2] + exploded])
+                color("#333333") controller_pod_lid();
+            preview_controller_straps(clamp_x, ctrl_x, ctrl_y, ctrl_z);
+        }
     }
 
     // Pupil-centred, same-height chief ray is optically coherent with the
-    // vertical 45-degree pane. This v0.1 intentionally does not fake elevation.
-    color([0.2, 1.0, 0.3, 0.85]) {
-        segment([hand * (engine_x + LENS_PRINCIPAL_FROM_FRONT_RIM
-                         + FOCUS_NOMINAL),
-                 engine_y, engine_z],
-                comb_center);
-        segment(comb_center, [0, 0, 0]);
+    // vertical 45-degree pane. This v0.2 intentionally does not fake elevation.
+    if (wear_pose == "deployed" && show_wearer_proxy) {
+        color([0.2, 1.0, 0.3, 0.85]) {
+            segment([hand * (engine_x + LENS_PRINCIPAL_FROM_FRONT_RIM
+                             + FOCUS_NOMINAL),
+                     engine_y, engine_z],
+                    comb_center);
+            segment(comb_center, [0, 0, 0]);
+        }
+
+        // Show only a physically meaningful first-order common box. The
+        // compact experimental preset has a negative axis and is not promoted.
+        if (COMMON_EYEBOX[0] > 0 && COMMON_EYEBOX[1] > 0)
+            color([1.0, 0.55, 0.1, 0.4])
+                translate([0, 0.8, 0])
+                    cube([COMMON_EYEBOX[0], 0.5, COMMON_EYEBOX[1]], center = true);
+    }
+}
+
+module split_pods_preview() {
+    ctrl_x = -28.0;
+    body_x = 26.0;
+    lid_lift = 9.0;
+
+    translate([ctrl_x, 0, 0]) {
+        color([0.12, 0.12, 0.14, 0.82]) controller_pod();
+        translate([0, 0, CTRL_OUTER[2] + lid_lift])
+            color([0.18, 0.18, 0.20, 0.72]) controller_pod_lid();
+
+        // XIAO, button, and supplied FPC antenna packaging proxies.
+        color([0.08, 0.32, 0.20, 0.95])
+            translate([-REAR_MCU[0] / 2,
+                       CTRL_MCU_CENTER_Y - REAR_MCU[1] / 2,
+                       CTRL_FLOOR + 0.3])
+                cube([REAR_MCU[0], REAR_MCU[1], 1.2]);
+        color([0.12, 0.12, 0.12, 0.95])
+            translate([CTRL_BUTTON_CENTER[0], CTRL_BUTTON_CENTER[1],
+                       CTRL_FLOOR + REAR_USER_BUTTON[2] / 2])
+                cube(REAR_USER_BUTTON, center = true);
+        color([0.75, 0.45, 0.12, 0.9])
+            translate([CTRL_ANTENNA_CENTER[0] - REAR_ANTENNA[0] / 2,
+                       CTRL_ANTENNA_CENTER[1] - REAR_ANTENNA[1] / 2,
+                       CTRL_OUTER[2] + lid_lift - 1.2])
+                cube(REAR_ANTENNA);
     }
 
-    // First-order eye-box marker at the pupil plane.
-    color([1.0, 0.55, 0.1, 0.4])
-        translate([0, 0.8, 0]) cube([7.2, 0.5, 9.8], center = true);
+    translate([body_x, 0, 0]) {
+        color([0.12, 0.12, 0.14, 0.82]) body_battery_pod();
+        translate([0, 0, BODY_CELL_OUTER[2] + lid_lift])
+            color([0.18, 0.18, 0.20, 0.72]) body_battery_pod_lid();
+        color([0.65, 0.68, 0.72, 0.95])
+            translate([-REAR_CELL[0] / 2,
+                       -REAR_CELL[1] / 2,
+                       BODY_CELL_FLOOR + 0.3])
+                cube(REAR_CELL);
+    }
+
+    // Two-wire protected-battery tether; the real build requires a tested
+    // low-retention disconnect close to the glasses.
+    color([0.8, 0.12, 0.12, 0.9])
+        segment([ctrl_x + CTRL_OUTER[0] / 2, CTRL_OUTER[1] / 2, 3.0],
+                [body_x - BODY_CELL_OUTER[0] / 2,
+                 BODY_CELL_OUTER[1] / 2, 3.0], 0.7);
+    color([0.08, 0.08, 0.08, 0.95])
+        segment([ctrl_x + CTRL_OUTER[0] / 2, CTRL_OUTER[1] / 2, 2.0],
+                [body_x - BODY_CELL_OUTER[0] / 2,
+                 BODY_CELL_OUTER[1] / 2, 2.0], 0.7);
 }
 
 // ---------- Selector ----------
 
 valid_part = part == "assembly"
           || part == "bench_assembly"
+          || part == "split_pods_preview"
           || part == "focus_bench_jig"
           || part == "focus_bench"
           || part == "oled_cartridge"
@@ -1543,13 +2279,19 @@ valid_part = part == "assembly"
           || part == "combiner_edge_liner"
           || part == "temple_saddle"
           || part == "quick_release"
+          || part == "compact_carriage"
           || part == "mount_adapter"
           || part == "engine_cradle"
           || part == "engine_clamp"
+          || part == "hinge_interference_probe"
           || part == "combiner_bracket"
           || part == "rear_pod"
           || part == "rear_pod_lid"
           || part == "rear_button_retainer"
+          || part == "controller_pod"
+          || part == "controller_pod_lid"
+          || part == "body_battery_pod"
+          || part == "body_battery_pod_lid"
           || part == "fit_coupon"
           || part == "cut_template"
           || part == "cut_template_print";
@@ -1560,6 +2302,7 @@ assert(valid_part,
 
 if (part == "assembly") assembly_preview();
 else if (part == "bench_assembly") bench_assembly_preview();
+else if (part == "split_pods_preview") split_pods_preview();
 else if (part == "focus_bench_jig") focus_bench_jig();
 else if (part == "focus_bench") focus_bench_jig();
 else if (part == "oled_cartridge") oled_focus_cartridge();
@@ -1571,13 +2314,19 @@ else if (part == "combiner_shim") combiner_shim();
 else if (part == "combiner_edge_liner") combiner_edge_liner();
 else if (part == "temple_saddle") temple_saddle();
 else if (part == "quick_release") quick_release();
+else if (part == "compact_carriage") compact_carriage();
 else if (part == "mount_adapter") mount_adapter();
 else if (part == "engine_cradle") engine_cradle();
 else if (part == "engine_clamp") engine_clamp();
+else if (part == "hinge_interference_probe") hinge_interference_probe();
 else if (part == "combiner_bracket") combiner_bracket();
 else if (part == "rear_pod") rear_pod();
 else if (part == "rear_pod_lid") rear_pod_lid();
 else if (part == "rear_button_retainer") rear_button_retainer();
+else if (part == "controller_pod") controller_pod();
+else if (part == "controller_pod_lid") controller_pod_lid();
+else if (part == "body_battery_pod") body_battery_pod();
+else if (part == "body_battery_pod_lid") body_battery_pod_lid();
 else if (part == "fit_coupon") fit_coupon();
 else if (part == "cut_template") combiner_cut_template_2d();
 else if (part == "cut_template_print") cut_template_print();

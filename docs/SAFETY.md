@@ -1,17 +1,20 @@
 # Safety
 
-OpenGlassHole is an uncertified DIY electronics and optics prototype. It is not
+Open OccuCue is an uncertified DIY electronics and optics prototype. It is not
 protective eyewear, a medical device, or a certified head-mounted display.
 
 ## Never use it in motion-critical situations
 
 Do not wear or read it while driving, cycling, crossing roads, walking in
 traffic, using stairs, operating machinery, playing sport, or doing anything
-where an obstructed field of view or distraction could injure someone. Test it
-seated and stationary. The reference 50/50 combiner occupies one eye's normal
-sightline and deliberately dims that view; keep the other eye unobstructed. Use
-padded hook-and-loop straps that can pull free under a snag; the printed sliding
-carriage itself is not a certified breakaway.
+where an obstructed field of view or distraction could injure someone. The
+reference build remains seated/stationary. A walking trial is limited to the
+staged [private, empty, level-room experiment](WALKING_EXPERIMENT.md) after all
+bench, dummy-head, clear-away, tether, and symptom checks pass; it is not a
+general walking-use claim. The 50/50 combiner occupies one eye's normal
+sightline and deliberately dims that view while deployed; keep the other eye
+and lower field unobstructed. Use padded hook-and-loop straps that can pull free
+under a snag; no printed mount or connector is a certified breakaway.
 
 ## Eye and optical hazards
 
@@ -31,8 +34,11 @@ carriage itself is not a certified breakaway.
 - Keep at least 2–3 mm dynamic clearance from prescription lenses. Do not glue,
   tape, or apply reflective film to prescription lenses or coatings.
 - The clip must release under a snag and contain no sharp fastener near the eye.
-- A collar/pocket pod needs a low-retention inline disconnect near the glasses;
-  never leave a body-tethered cable able to pull the frame into the eye.
+- The parked hinge pose needs hard stops and its keeper engaged. Never rely on
+  pivot friction, and never continue if the optics can fall into view.
+- A body battery pod needs a low-retention inline disconnect within 50 mm of
+  the glasses; never leave a body-tethered cable able to pull the frame into
+  the eye.
 
 ## LiPo and electrical hazards
 
@@ -40,8 +46,9 @@ carriage itself is not a certified breakaway.
   380 mA and continuous discharge rating of at least 500 mA. Validate the
   finished build through Wi-Fi current peaks before wearing it.
 - Confirm polarity with a multimeter. JST and pigtail polarity is not universal.
-- Put the cell in the rigid rear pod with strain relief. Never screw through,
-  crush, fold, bend, or tightly clamp a pouch cell.
+- Put the cell in the rigid integrated or body battery pod with padding and
+  strain relief. Never screw through, crush, fold, bend, or tightly clamp a
+  pouch cell.
 - Charge off-head, at room temperature, on a nonflammable surface, and while
   attended. In the reference wiring the power switch must be ON to charge.
 - Stop immediately if the cell becomes hot, swollen, soft, creased, punctured,

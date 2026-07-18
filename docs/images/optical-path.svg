@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
-  <title id="title">Top view of the OpenGlassHole optical path</title>
+  <title id="title">Top view of the Open OccuCue optical path</title>
   <desc id="desc">Light from a side-mounted OLED passes through a positive lens, reflects from a forty-five degree beamsplitter pane, passes through the wearer's prescription lens, and reaches the right eye. Light from the real world travels through that same combiner toward the eye.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker>

@@ -8,7 +8,7 @@ one tiny text response for the glasses, and a JSON update endpoint.
 From the repository root:
 
 ```sh
-export OPENGLASSHOLE_API_KEY='choose-a-long-random-update-key'
+export OPEN_OCCUCUE_API_KEY='choose-a-long-random-update-key'
 python3 server/cue_server.py --host 0.0.0.0 --port 8787
 ```
 
@@ -81,8 +81,10 @@ or fewer are centered without scrolling. Cue state is atomically persisted to
 
 ## Security model
 
-- `OPENGLASSHOLE_API_KEY` protects writes, not reads. An autocue is normally on
-  a private stage/home LAN and keeping display reads simple saves configuration.
+- `OPEN_OCCUCUE_API_KEY` protects writes, not reads. The legacy
+  `OPENGLASSHOLE_API_KEY` spelling remains a deprecated fallback. An autocue is
+  normally on a private stage/home LAN and keeping display reads simple saves
+  configuration.
 - Without the environment variable, writes are unauthenticated and the editor
   shows a warning.
 - Do not publish this server directly. If remote control is unavoidable, put it

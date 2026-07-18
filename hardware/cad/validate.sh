@@ -2,17 +2,18 @@
 set -euo pipefail
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-source_file="$script_dir/openglasshole.scad"
+source_file="$script_dir/open-occucue.scad"
 mesh_check="$script_dir/validate_mesh.py"
 
 printable_parts=(
   focus_bench_jig focus_bench oled_cartridge lens_tunnel lens_retainer
   combiner_frame combiner_clamp combiner_shim combiner_edge_liner
-  temple_saddle quick_release
+  temple_saddle quick_release compact_carriage
   mount_adapter engine_cradle engine_clamp combiner_bracket
   rear_pod rear_pod_lid rear_button_retainer fit_coupon cut_template_print
+  controller_pod controller_pod_lid body_battery_pod body_battery_pod_lid
 )
-preview_parts=(assembly bench_assembly)
+preview_parts=(assembly bench_assembly split_pods_preview)
 presets=(budget_25x45 compact_23x30)
 
 if [[ -n ${OPENSCAD_BIN:-} ]]; then
@@ -32,7 +33,7 @@ if [[ ! -x "$mesh_check" ]]; then
   exit 126
 fi
 
-validation_dir=$(mktemp -d "${TMPDIR:-/tmp}/openglasshole-cad.XXXXXX")
+validation_dir=$(mktemp -d "${TMPDIR:-/tmp}/open-occucue-cad.XXXXXX")
 cleanup() {
   if [[ ${VALIDATION_KEEP:-0} == 1 ]]; then
     echo "kept validation outputs: $validation_dir"
@@ -111,6 +112,56 @@ validate_asymmetric_lens_guards() {
   fi
 }
 
+validate_hinge_stops() {
+  local angle output log
+  local sweep_angles=(
+    0.1 1 2 5 10 20 30 40 50 60 70 80 90 95 98 99 99.9
+  )
+
+  # Inside the two asserted, exactly coincident contact planes, the moving
+  # clamp and fixed carriage must have no volumetric interference. Endpoint
+  # surface contact is checked algebraically in the SCAD; exporting a
+  # zero-thickness STL is renderer-dependent, so probe just inside each limit.
+  for angle in "${sweep_angles[@]}"; do
+    output="$validation_dir/hinge-clear-$angle.stl"
+    log="$validation_dir/hinge-clear-$angle.log"
+    # OpenSCAD exits nonzero when an intersection is intentionally empty, so
+    # judge these probes from the diagnostic and absence of an output mesh.
+    "${openscad_command[@]}" \
+        -D 'lens_preset="budget_25x45"' \
+        -D 'part="hinge_interference_probe"' \
+        -D "hinge_probe_angle=$angle" \
+        -o "$output" "$source_file" >"$log" 2>&1 || true
+    if grep -E '(WARNING|ERROR):' "$log" >/dev/null \
+        || [[ -s "$output" ]] \
+        || ! grep -F 'Current top level object is empty' "$log" >/dev/null; then
+      cat "$log" >&2
+      echo "error: hinge parts interfere at $angle degrees" >&2
+      return 1
+    fi
+  done
+
+  # A small move beyond either limit must create real overlap. This proves the
+  # radial faces block travel instead of merely approaching with a gap.
+  for angle in -1 101; do
+    output="$validation_dir/hinge-block-$angle.stl"
+    log="$validation_dir/hinge-block-$angle.log"
+    if ! "${openscad_command[@]}" \
+        -D 'lens_preset="budget_25x45"' \
+        -D 'part="hinge_interference_probe"' \
+        -D "hinge_probe_angle=$angle" \
+        -o "$output" "$source_file" >"$log" 2>&1; then
+      cat "$log" >&2
+      return 1
+    fi
+    if grep -E '(WARNING|ERROR):' "$log" >/dev/null || [[ ! -s "$output" ]]; then
+      cat "$log" >&2
+      echo "error: hinge hard stop does not block beyond $angle degrees" >&2
+      return 1
+    fi
+  done
+}
+
 "${openscad_command[@]}" --version
 for preset in "${presets[@]}"; do
   for selected_part in "${printable_parts[@]}"; do
@@ -123,5 +174,6 @@ for preset in "${presets[@]}"; do
 done
 
 validate_asymmetric_lens_guards
+validate_hinge_stops
 
 echo "CAD validation passed for both lens presets and every selector."
