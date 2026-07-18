@@ -21,16 +21,29 @@ usable runtime hours ≈ battery mAh × 0.8 / measured average mA
 The 0.8 factor allows for cell ageing, regulator dropout, temperature, and
 optimistic capacity labels.
 
-| Operating mode | Estimated average | 500 mAh estimate |
-| --- | ---: | ---: |
-| Worst sustained Wi-Fi + bright/all-pixel OLED | ~95 mA | ~4.2 h |
-| Always connected, modem power-save | ~36 mA | ~11 h |
-| Reference 15 s radio-off polling | ~14–22 mA | ~18–29 h |
-| `FETCH_ON_BOOT_ONLY`, radio off during playback | ~8–16 mA | ~25–50 h |
+| Operating mode | Estimated average | 500 mAh estimate | Optional 1200 mAh estimate |
+| --- | ---: | ---: | ---: |
+| Worst sustained Wi-Fi + bright/all-pixel OLED | ~95 mA | ~4.2 h | ~10.1 h |
+| Always connected, modem power-save | ~36 mA | ~11 h | ~26.7 h |
+| Reference 15 s radio-off polling | ~14–22 mA | ~18–29 h | ~44–69 h |
+| `FETCH_ON_BOOT_ONLY`, radio off during playback | ~8–16 mA | ~25–50 h | ~60–120 h |
 
 Only the worst-case bound comes directly from adding published component-scale
 figures. The other rows are engineering targets. Do not advertise a runtime
 until it is measured on the assembled device.
+
+The 1200 mAh column is arithmetic using the same assumptions, not a tested
+pack. The costed 1200 mAh option is off-body, exceeds the $50 known-parts target
+before tether/enclosure extras, weighs more, and needs a larger pod; see
+[OPTIONS.md](OPTIONS.md). Do not put that cell on the glasses.
+
+The compact reference keeps the XIAO and OLED together and carries only
+protected 1S battery power over a short, flexible 26–28 AWG tether. Measure
+voltage drop during Wi-Fi peaks and during the XIAO's 380 mA charge cycle. A
+low-retention connector can reset the device if it bounces and is not a safety
+breakaway without surrogate pull tests. Charging through the local XIAO
+requires the tether connected and SW1 ON; always charge the entire assembly
+off-head and attended.
 
 ## Measuring the real build
 
@@ -54,6 +67,10 @@ until it is measured on the assembled device.
 - Keep `RADIO_OFF_BETWEEN_POLLS = true`.
 - Reduce `OLED_CONTRAST`; OLED load depends strongly on lit pixels.
 - Keep cue glyphs sparse and use a black background.
+- Use line-step mode for stable dwell periods when desired; do not assume it
+  saves power until current is measured because the same pixels remain lit.
+- Short-tap blackout turns the OLED display off while paused, but background
+  fetch timing continues; measure it rather than treating it as deep sleep.
 - Fetch a complete short script and use the button to reload between sections.
 - Use a physical switch for true off. Base-board deep sleep does not help much
   if the OLED remains powered.

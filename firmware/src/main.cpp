@@ -19,6 +19,7 @@
 #define OGH_USING_EXAMPLE_CONFIG 1
 #endif
 
+#include "motion_display.h"
 #include "oled49.h"
 
 namespace {
@@ -55,6 +56,17 @@ static_assert(CHARACTER_WIDTH_PX <= VIEWPORT_WIDTH_PX,
               "TEXT_SIZE is too large for the OLED viewport");
 static_assert(LINE_HEIGHT_PX <= Oled49::HEIGHT_PX, "TEXT_SIZE is too large for the OLED height");
 static_assert(MAX_CUE_CHARS <= UINT16_MAX, "wrapped line offsets must fit uint16_t");
+static_assert(OGH_OLED_I2C_HZ == 100000 || OGH_OLED_I2C_HZ == 400000,
+              "OGH_OLED_I2C_HZ must be 100000 or 400000");
+static_assert(OGH_SCROLL_MODE == 0 || OGH_SCROLL_MODE == 1,
+              "OGH_SCROLL_MODE must be 0 (smooth) or 1 (line-step)");
+static_assert(OGH_GLANCE_DWELL_MS > 0, "OGH_GLANCE_DWELL_MS must be positive");
+static_assert(OGH_BLACKOUT_ON_PAUSE == 0 || OGH_BLACKOUT_ON_PAUSE == 1,
+              "OGH_BLACKOUT_ON_PAUSE must be 0 or 1");
+
+constexpr ogh_motion::ScrollMode SCROLL_MODE = OGH_SCROLL_MODE == 1
+    ? ogh_motion::ScrollMode::LINE_STEPS
+    : ogh_motion::ScrollMode::SMOOTH_PIXELS;
 
 struct FetchResult {
     bool success;
@@ -86,6 +98,7 @@ uint32_t next_frame_at = 0;
 uint32_t next_poll_at = 0;
 uint8_t consecutive_failures = 0;
 bool paused = false;
+bool display_blacked_out = false;
 bool force_redraw = true;
 bool force_fetch = true;
 bool fetch_in_progress = false;
@@ -274,6 +287,9 @@ void setCueText(const String &incoming, bool persist) {
 }
 
 void renderCue(bool advance) {
+    if (display_blacked_out) {
+        return;
+    }
     const uint32_t now = millis();
     if (!force_redraw && (paused || max_scroll_offset_px == 0)) {
         return;
@@ -285,15 +301,18 @@ void renderCue(bool advance) {
     force_redraw = false;
 
     if (advance && !redraw_only && !paused && max_scroll_offset_px > 0) {
-        if (scroll_offset_px < max_scroll_offset_px) {
-            ++scroll_offset_px;
-            next_frame_at = now + (
-                scroll_offset_px == max_scroll_offset_px ? SCROLL_END_HOLD_MS : scroll_ms
-            );
-        } else {
-            scroll_offset_px = 0;
-            next_frame_at = now + SCROLL_START_HOLD_MS;
-        }
+        const ogh_motion::AdvanceResult result = ogh_motion::advanceScroll(
+            SCROLL_MODE,
+            scroll_offset_px,
+            max_scroll_offset_px,
+            LINE_HEIGHT_PX,
+            scroll_ms,
+            OGH_GLANCE_DWELL_MS,
+            SCROLL_START_HOLD_MS,
+            SCROLL_END_HOLD_MS
+        );
+        scroll_offset_px = result.offset_px;
+        next_frame_at = now + result.wait_ms;
     }
 
     display.clear();
@@ -542,7 +561,31 @@ void handleButton() {
     if (held_ms >= BUTTON_FORCE_FETCH_MS) {
         force_fetch = true;
     } else {
-        paused = !paused;
+        const ogh_motion::TapResult result = ogh_motion::shortTap(
+            paused,
+            OGH_BLACKOUT_ON_PAUSE != 0
+        );
+        paused = result.paused;
+        if (result.blackout) {
+            // Enter display-off first for an immediate blackout, then clear
+            // controller RAM to avoid stale text when the user peeks again.
+            display.setPowered(false);
+            display_blacked_out = true;
+            display.clear();
+            display.show();
+        } else if (display_blacked_out) {
+            display.setPowered(true);
+            display_blacked_out = false;
+        }
+        if (!paused) {
+            // A restored peek gets a complete readable dwell instead of
+            // immediately consuming an overdue frame from before the pause.
+            next_frame_at = now + (
+                SCROLL_MODE == ogh_motion::ScrollMode::LINE_STEPS
+                    ? OGH_GLANCE_DWELL_MS
+                    : scroll_ms
+            );
+        }
         force_redraw = true;
     }
 }
@@ -604,7 +647,7 @@ void setup() {
     setCueText(stored_cue, false);
     resetCueScroll();
 
-    if (!display.begin(OLED_SDA_PIN, OLED_SCL_PIN)) {
+    if (!display.begin(OLED_SDA_PIN, OLED_SCL_PIN, OGH_OLED_I2C_HZ)) {
         Serial.println("OLED not found at configured I2C address");
     }
     display.setContrast(ogh_config::OLED_CONTRAST);

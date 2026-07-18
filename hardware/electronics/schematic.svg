@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
-  <title id="title">OpenGlassHole reference wiring schematic</title>
-  <desc id="desc">A protected lithium polymer cell connects through a switch to the XIAO ESP32-C3 battery pads. The XIAO powers a four-wire I2C OLED and reads one push button.</desc>
+  <title id="title">OpenGlassHole reference and split-pod wiring schematic</title>
+  <desc id="desc">A protected lithium polymer cell connects through a switch and optional near-glasses disconnect to the XIAO ESP32-C3 battery pads. The local XIAO powers a short four-wire I2C OLED and reads one push button.</desc>
   <style>
     .bg{fill:#0f1419}.panel{fill:#19232d;stroke:#9fb3c8;stroke-width:3}.label{fill:#eef6ff;font:700 25px system-ui,sans-serif}.small{fill:#c7d4e2;font:18px system-ui,sans-serif}.tiny{fill:#b9c8d8;font:15px system-ui,sans-serif}.pin{fill:#0f1419;stroke:#7f95aa;stroke-width:2}.wire{fill:none;stroke-width:5;stroke-linejoin:round}.red{stroke:#ff6262}.black{stroke:#b4c1ce}.blue{stroke:#63b7ff}.yellow{stroke:#ffd166}.green{stroke:#5ee1a2}.dash{stroke-dasharray:10 8}.note{fill:#242f3a;stroke:#64788b;stroke-width:2}
   </style>
@@ -16,6 +16,10 @@
   <rect x="335" y="232" width="105" height="58" rx="10" class="panel"/>
   <text x="355" y="268" class="small">SW1</text>
   <path d="M350 282 L410 242" class="wire red"/>
+
+  <rect x="455" y="245" width="30" height="130" rx="7" class="panel dash"/>
+  <circle cx="470" cy="275" r="5" fill="#ff6262"/><circle cx="470" cy="350" r="5" fill="#b4c1ce"/>
+  <text x="438" y="405" class="tiny">DISC1*</text>
 
   <rect x="505" y="160" width="315" height="380" rx="18" class="panel"/>
   <text x="545" y="210" class="label">XIAO ESP32-C3</text>
@@ -37,8 +41,8 @@
   <circle cx="930" cy="430" r="8" fill="#63b7ff"/><text x="951" y="437" class="small">SDA</text>
   <circle cx="930" cy="470" r="8" fill="#ffd166"/><text x="951" y="477" class="small">SCL</text>
 
-  <path d="M255 275 H335 M440 260 H475 V284 H495" class="wire red"/>
-  <path d="M255 350 H495" class="wire black"/>
+  <path d="M255 275 H335 M440 260 H455 M485 260 H490 V284 H495" class="wire red"/>
+  <path d="M255 350 H455 M485 350 H495" class="wire black"/>
   <path d="M830 299 H875 V350 H930" class="wire red"/>
   <path d="M830 354 H875 V390 H930" class="wire black"/>
   <path d="M830 424 H930" class="wire blue"/>
@@ -50,5 +54,5 @@
 
   <rect x="60" y="615" width="1080" height="66" rx="12" class="note"/>
   <text x="82" y="643" class="small">SW1 must be ON while charging. Verify battery and cable polarity with a multimeter.</text>
-  <text x="82" y="669" class="tiny">OLED cable colours are not authoritative. Attach the XIAO’s included external antenna and keep it clear of the battery.</text>
+  <text x="82" y="669" class="tiny">*Split pod: put DISC1 within 50 mm of the glasses and carry BAT+/BAT− only; it is not a safety breakaway until pull-tested.</text>
 </svg>

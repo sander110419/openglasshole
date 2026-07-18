@@ -2,6 +2,30 @@
 
 #include <Arduino.h>
 
+// Motion-comfort display controls. Smooth pixel scrolling remains the default
+// for compatibility. Set OGH_SCROLL_MODE to 1 to advance by one complete 8-px
+// text row, holding each view steady for OGH_GLANCE_DWELL_MS.
+#ifndef OGH_SCROLL_MODE
+#define OGH_SCROLL_MODE 0
+#endif
+#ifndef OGH_GLANCE_DWELL_MS
+#define OGH_GLANCE_DWELL_MS 1200UL
+#endif
+
+// A short tap always pauses/resumes. With this set to 1, pause also blanks the
+// OLED and enters display-off mode; the next short tap restores the same cue
+// and resumes. Set it to 0 if you prefer the original visible-pause behavior.
+#ifndef OGH_BLACKOUT_ON_PAUSE
+#define OGH_BLACKOUT_ON_PAUSE 1
+#endif
+
+// Keep 400 kHz for the short on-glasses harness. If you deliberately move the
+// controller off-head as a separate bench experiment, limit its I2C harness to
+// 250 mm and start at 100 kHz; scope and flex-test the finished cable.
+#ifndef OGH_OLED_I2C_HZ
+#define OGH_OLED_I2C_HZ 400000UL
+#endif
+
 // Copy this file to config.h. That file is gitignored so Wi-Fi credentials do
 // not end up in commits. The example remains buildable for CI, but it cannot
 // connect until these values are changed.

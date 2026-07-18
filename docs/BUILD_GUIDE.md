@@ -27,6 +27,11 @@ actual cart total. Tooling and full packs/spools of generic consumables are not
 included; the under-$50 delivered target is not yet demonstrated by a build
 report.
 
+The baseline already uses the smallest packaging that preserves the validated
+CAD optical path: a local controller pod and an off-body 500 mAh cell. Review
+the [costed options](OPTIONS.md) before substituting a cell, connector, retainer,
+hood, or pane; most combinations leave little or no margin below $50.
+
 When the parts arrive:
 
 1. Photograph labels and measure the OLED board, emitting-area centre,
@@ -157,19 +162,22 @@ opaque contrast flag or a higher-reflectance combiner.
 
 ## 6. Assemble the wearable
 
-Only after the optical bench succeeds, print `temple_saddle`, `quick_release`,
-`mount_adapter`, `engine_cradle`, `engine_clamp`, `combiner_bracket`, `rear_pod`,
-`rear_pod_lid`, and `rear_button_retainer`. Print the button retainer flat on a
-broad face and deburr its open U-slot without thinning the side bearings. Use a
-removable opaque card or soft cover as a sunlight/storage flag until a validated
-printed flag is added.
+Only after the optical bench succeeds, print `temple_saddle`,
+`compact_carriage`, `engine_cradle`, `engine_clamp`, `combiner_bracket`,
+`controller_pod`, `controller_pod_lid`, `body_battery_pod`,
+`body_battery_pod_lid`, and `rear_button_retainer`. The separately released
+`quick_release`, `mount_adapter`, `rear_pod`, and `rear_pod_lid` are legacy
+stationary-build parts, not the compact reference. Print the button retainer
+flat on a broad face and deburr its open U-slot without thinning the side
+bearings. Use a removable opaque card or soft cover as a sunlight/storage flag;
+remove an opaque contrast hood before any walking experiment.
 
 Do not orient `combiner_bracket` like the bench lens retainer: its pane socket
 projects beyond the narrow stop plane. Put its square tunnel-interface,
 full-pocket face on the bed with the socket rising. Add removable support from
 the build plate inside the narrowing lens aperture and beneath the socket
 arm/capture boss, keeping support off the three pad lands where possible. After
-cleanup, verify the 15 mm aperture, undamaged lands, and at least 0.6 mm hard
+cleanup, verify the 16×14 mm aperture, undamaged lands, and at least 0.6 mm hard
 clearance to the measured lens surface. Reject or redesign a print whose
 support scars intrude into the lens cell.
 
@@ -177,17 +185,27 @@ support scars intrude into the lens cell.
    using two separate 6–8 mm hook-and-loop bands. Nothing clamps the
    prescription lens; the bands are the intended snag-releasing element, not a
    certified breakaway.
-2. Before fitting the engine, use two M2×5 socket-head screws (head no larger
-   than 4.4 mm OD × 2.0 mm high) through the adapter's recessed X holes into the
-   carriage's blind pilots. Trim every printed pilot with the matching tap or
-   screw; do not force a splitting print.
-3. Put the tunnel in the split collar and fasten the lower cradle to the upper
-   clamp with two M2×6 screws. Put the adapter below the raised engine-clamp pad
-   and fasten its Y pair with two more M2×6 screws. Slide the carriage onto the
-   saddle and lock it with the side-access M2.5×6 set screw. The rail adjusts
-   fore/aft only; set height/yaw/elevation by repositioning the padded saddle
-   or by measured wedge shims, then re-run the optical test.
-4. Fit the guarded combiner sandwich into the bracket socket. With both screw
+2. Slide `compact_carriage` onto the saddle rail and lock it with the
+   side-access M2.5×6 screw. This is a position lock, not a breakaway. The rail
+   adjusts fore/aft only; set height/yaw/elevation by repositioning the padded
+   saddle or by measured, keyed wedge shims, then re-run the optical test.
+3. Put the `engine_clamp` centre barrel between the carriage knuckles. Fit an
+   M2.5×22–25 pivot with a washer at both ends and a nyloc, tightening only
+   enough to remove axial play. Before fitting it, inspect all four fixed stop
+   spines, both moving stop wings, and their narrow roots under magnification;
+   reject incomplete layers, support scars on a contact face, cracks, or poor
+   fusion. At 0° and 100°, both left/right stop patches must seat together
+   without twisting the barrel. Tie a short replaceable silicone/TPU keeper
+   through the moving bridge and prove it seats positively on the deployed and
+   parked keeper pegs. The hard stops define angle; the keeper retains contact,
+   and pivot friction does neither. Cycle the mechanism 200 times off-head and
+   reject cracked, whitening, loose, asymmetric, or self-deploying parts.
+4. Put the tunnel in the split collar and fasten the lower cradle to the upper
+   clamp with two M2×6 screws. Use the M2.5×35 focus bolt with broad washers and
+   a nyloc; do not substitute a longer screw near the optical path. Fit the
+   bracket to the tunnel with two M2×6 screws, compressing only the compliant
+   lens pads.
+5. Fit the guarded combiner sandwich into the bracket socket. With both screw
    heads on the clamp/outboard face, use an M2×12 bolt through the 7.25 mm
    bracket-captured lower-ear stack and an M2×10 through the 4.25 mm upper-ear
    stack. Put a ≤5.0 mm OD washer and ordinary approximately 2.8 mm-high M2
@@ -198,25 +216,32 @@ support scars intrude into the lens cell.
    from prescription lenses through deliberate frame flex. The pane's chief-ray
    point is centred on the chosen pupil and occupies that eye's normal
    sightline; keep the other eye unobstructed.
-5. Route the four OLED wires above the temple hinge with a service loop and at
+6. Route the four OLED wires above the temple hinge with a service loop and at
    least a 5 mm bend radius. Confirm the glasses can fold without pinching them.
-6. Strap the rear pod to the temple with the remaining two independent bands,
-   then mount the XIAO and external antenna. Both complete strap footprints must
-   wrap the temple; keep the antenna away from the cell and metal hardware.
-7. Wire the long-stem button, insert it stem-first from the lid underside, and
-   slide `rear_button_retainer` under its body from the cage's open `+Y` side
+7. Strap `controller_pod` to the temple with two independent bands. Install the
+   XIAO, external antenna, and OLED harness locally so the I²C run remains short;
+   keep the antenna clear of wires and metal hardware. Both complete strap
+   footprints must wrap the temple.
+8. Wire the long-stem button, insert it stem-first from the controller-lid
+   underside, and slide `rear_button_retainer` under its body from the cage's
+   open `+Y` side
    until it stops on both ledges. Kapton may prevent withdrawal/rattle but must
    not carry button force. Confirm repeated presses react against the printed
    plate, not tape, solder joints, or the controller.
-8. Solder the protected cell through SW1 only after confirming polarity twice.
-   The cell must float in its pocket with padding and strain relief; no screw may
-   touch it.
-9. Fit the lid and record optical-head, rear-pod, and total mass. The preliminary
-   all-on-glasses estimate is roughly 55–65 g, not a measured claim. If it
-   slides or pressure is uncomfortable, put the controller/cell pod in a
-   collar or pocket. Add the BOM's optional low-retention inline connector near
-   the glasses and prove on a surrogate frame that a cable pull disconnects it;
-   a long tether to the face is not acceptable.
+9. Put the protected cell and SW1 in `body_battery_pod`, confirming polarity
+   twice. The cell must float in removable padding with strain relief; no screw
+   or clip root may touch it. Route only a flexible, twisted 26–28 AWG
+   BAT+/BAT− pair to the glasses. Fit a keyed, touch-safe, low-retention
+   disconnect within 50 mm of the frame and verify the exact pinout in the
+   [wiring guide](../hardware/electronics/wiring.md) before connecting a cell.
+   Keep the body pod on a collar or secured upper pocket and route the tether
+   against clothing, outside any neck loop.
+10. Close both pods with two M2×8 screws each. Record forward-optics, local-pod,
+    total on-glasses, and off-body-pod mass plus fore/aft and lateral centre of
+    mass. CAD volume and sourced component masses suggest a **35–45 g**
+    on-glasses target, roughly 25 g below the legacy 55–65 g estimate, but
+    neither is measured. If it slides, changes gait, or creates pressure, stop;
+    do not counter it with a tighter non-releasing mount.
 
 ## 7. Charge and acceptance test
 
@@ -233,16 +258,28 @@ Before normal use, pass these checks:
 - measured lens-to-stop hard clearance is at least 0.6 mm, and dynamic
   prescription-lens clearance is at least 2–3 mm
 - mount aim drifts less than about 0.5° after repeated nodding
+- the clear-away hinge completes 200 off-head cycles, both hard stops remain
+  intact, the keeper positively retains both poses, and one hand parks it in
+  under one second without the pane entering the normal/lower-forward view
 - an off-head pull test on a surrogate/spare frame shows the padded
   hook-and-loop mount peels free before the frame is overstressed; never perform
   a deliberate snag test while wearing it
+- in every surrogate pull direction, the battery connector separates before
+  the temple mount releases or the frame permanently bends; record the force
 - wire is not pinched when glasses fold
-- both rear-pod straps fully wrap the temple, and 50 button presses cause no
-  switch/retainer movement, lead strain, or tape loading
+- both controller-pod straps fully wrap the temple, and 50 button presses cause
+  no switch/retainer movement, lead strain, or tape loading
+- the body pod remains secured to clothing through full head turns without a
+  felt tether pull, exposed conductor, reset, hot contact, or cable loop at the
+  neck
 - short and two-hour stationary comfort tests are acceptable
 - update, Wi-Fi outage, server outage, pause, and reload all preserve a readable
   cached cue
 - actual current and runtime are measured and recorded
+
+Passing these checks establishes only a stationary prototype. Do not begin a
+gait test until every Stage 0 and Stage 1 item in the
+[controlled walking protocol](WALKING_EXPERIMENT.md) also passes.
 
 ## Troubleshooting
 

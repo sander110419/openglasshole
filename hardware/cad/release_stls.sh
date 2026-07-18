@@ -8,9 +8,10 @@ mesh_check="$script_dir/validate_mesh.py"
 parts=(
   focus_bench_jig oled_cartridge lens_tunnel lens_retainer
   combiner_frame combiner_clamp combiner_shim combiner_edge_liner
-  temple_saddle quick_release
+  temple_saddle quick_release compact_carriage
   mount_adapter engine_cradle engine_clamp combiner_bracket
   rear_pod rear_pod_lid rear_button_retainer fit_coupon cut_template_print
+  controller_pod controller_pod_lid body_battery_pod body_battery_pod_lid
 )
 
 if [[ -n ${OPENSCAD_BIN:-} ]]; then

@@ -7,11 +7,11 @@ OLED → positive lens → 45° partial reflector → prescription lens → eye
 ```
 
 It does **not** project text onto the prescription lens. The positive lens makes
-the OLED rays approximately parallel; the eye then perceives a virtual image at
-a comfortable distance while still seeing the world through the partially
-reflective pane. Ordinary prescription lenses are unreliable reflectors because
-their angle, curvature, and anti-reflective coatings vary. Never apply film to
-them.
+the OLED rays approximately parallel; after bench calibration, the eye is
+intended to perceive a virtual image at a comfortable distance while still
+seeing the world through the partially reflective pane. Ordinary prescription
+lenses are unreliable reflectors because their angle, curvature, and
+anti-reflective coatings vary. Never apply film to them.
 
 ![Top-view optical path](images/optical-path.svg)
 
@@ -24,7 +24,7 @@ The CAD defaults are packaging values that must be tuned to the parts in hand:
 | OLED controller/module | SSD1315, 64×32, 15.5×13 mm board |
 | Emitting raster | approximately 9.92×4.96 mm from 0.155 mm pixel pitch |
 | Lens | biconvex acrylic, 25 mm diameter, nominal 45 mm EFL; measure edge/centre thickness and both face sags |
-| Lens clear stop | 15 mm image-side tapered aperture; retention stays at the padded outer rim |
+| Lens clear stop | 16×14 mm image-side rectangular tapered aperture; retention stays at the padded outer rim |
 | OLED-to-lens travel | 38–52 mm |
 | Combiner | 30×30×1.1 mm, 50R/50T plate |
 | Lens-to-combiner gap | 15 mm nominal |
@@ -41,38 +41,52 @@ horizontal FOV = 2 atan(7.44 / (2 × 45)) ≈ 9.5°
 vertical FOV   = 2 atan(4.96 / (2 × 45)) ≈ 6.3°
 ```
 
-The 45° pane makes the beam footprint asymmetric. Intersecting the two extreme
-horizontal field rays with the modeled pane gives a roughly 24.9 mm footprint,
-shifted about 1.0 mm from the chief-ray intersection. The CAD shifts the frame
-to centre that bundle in its 28 mm clear aperture, leaving about 1.55 mm at
-each modeled edge. This is a first-order packaging check, not proof: the cheap
-singlet will still have edge blur, distortion, stop-thickness effects, and tight
-alignment tolerances.
+The 45° pane makes the beam footprint asymmetric. Sampling every corner of the
+16×14 mm stop and every horizontal/vertical field corner against the modeled
+pane gives a first-order footprint of about 26.31×16.76 mm. Its horizontal
+centre is shifted -1.09 mm from the chief-ray intersection. The CAD shifts the
+frame to centre that bundle in its 28×28 mm clear aperture, leaving about
+0.84 mm at each horizontal edge and 5.62 mm at each vertical edge. This is a
+first-order packaging check, not proof: the cheap singlet will still have edge
+blur, distortion, stop-thickness effects, and tight alignment tolerances.
 
 ## Eye box and the intentional crop
 
-For an axis-only first-order check, the common full-image pupil overlap is
-approximately. The calculation deliberately uses a conservative 47 mm path
-(15 mm nominal lens-to-pane plus 32 mm pane-to-pupil); the physical image-side
-stop sits slightly closer to the pane.
+For a first-order full-field check, intersect all translations of the
+rectangular stop made by the four field corners. The calculation deliberately
+uses a conservative 47 mm path (15 mm nominal lens-to-pane plus 32 mm
+pane-to-pupil); the physical image-side stop sits slightly closer to the pane.
 
 ```text
-eye-box axis ≈ stop diameter − 2 × (stop-to-pupil path) × tan(half field)
-horizontal   ≈ 15 − 2 × 47 × (7.44 / 90) ≈ 7.2 mm
-vertical     ≈ 15 − 2 × 47 × (4.96 / 90) ≈ 9.8 mm
+eye-box axis ≈ stop extent − 2 × (stop-to-pupil path) × tan(half field)
+horizontal   ≈ 16 − 2 × 47 × (7.44 / 90) ≈ 8.23 mm
+vertical     ≈ 14 − 2 × 47 × (4.96 / 90) ≈ 8.82 mm
 ```
 
-That estimate ignores field corners, eye rotation, lens aberration, assembly
-error, and prescription-lens effects. The build guide therefore sets a lower
-measured acceptance threshold of **6×6 mm** for the whole cropped cue. If it
-misses, do not call the wearable complete: re-align on the bench or use a
-larger matched lens and combiner. Restoring all 64 columns with this 30 mm pane
-shrinks the margin too far for the reference design.
+That calculation includes the ideal rectangular field corners, but still
+ignores eye rotation, lens aberration, assembly error, stop-edge print error,
+and prescription-lens effects. The quoted width and height are modeled extents,
+not a guarantee that every point in that rectangle is a comfortable usable eye
+box. The build guide therefore sets a lower **measured** acceptance threshold
+of 6×6 mm for the whole cropped cue. If it misses, do not call the wearable
+complete: re-align on the bench or use a larger matched lens and combiner.
+Restoring all 64 columns with this 30 mm pane shrinks the margin too far for the
+reference design.
 
 The CAD retains a 23 mm / 30 mm short-focus preset for experiments only. With
 its 10 mm stop, it has no positive first-order horizontal overlap for the whole
 48-column cue at the reference eye relief. It is not a release build or BOM
 alternative.
+
+## Deployed and parked poses
+
+The flip-up hinge changes the storage and clear-away state, not the optical
+design. Deployed, the cue still uses the pupil-centred 45-degree path described
+above. Parked, it is out of the normal sightline and is not an alternate viewing
+angle. The hinge does not make this an off-axis display or make reading while
+walking safe. The reference use remains seated and stationary; any gait trial
+is limited to the staged [controlled experiment](WALKING_EXPERIMENT.md) after
+all prerequisite checks pass.
 
 ## Focus is a calibration, not a fixed dimension
 
@@ -120,9 +134,11 @@ edge collar before lowering the pane into the rigid frame, then add the separate
 soft face gasket. Fully capture all four edges/corners and handle coated faces
 only by their edges.
 
-An optional opaque flag behind the pane gives much better contrast in a bright
-room and allows lower OLED power. It makes the display temporarily occluded,
-which is acceptable for a stationary autocue but not an AR illusion.
+An optional opaque flag behind the pane can improve contrast in a moderately
+bright indoor room and allow lower OLED power. It does not make the display
+sunlight-readable or suitable for outdoor use. The flag makes the display
+temporarily occluded, which is acceptable for a stationary autocue but not an
+AR illusion.
 
 ## Prescription and polarization checks
 
