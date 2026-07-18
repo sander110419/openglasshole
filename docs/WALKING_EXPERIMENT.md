@@ -1,6 +1,6 @@
 # Controlled walking experiment
 
-OpenGlassHole is still an unvalidated DIY optical prototype. The reference
+Open OccuCue is still an unvalidated DIY optical prototype. The reference
 build is for seated, stationary use. This document describes the extra design
 features and staged evidence required before trying it at walking pace in a
 private, empty, level indoor room. It is **not** permission to use the display

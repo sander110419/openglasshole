@@ -1,4 +1,4 @@
-# OpenGlassHole CAD
+# Open OccuCue CAD
 
 This directory contains the parametric OpenSCAD 2021.01 source, reviewed STL
 exports, and mechanical validation tools for the v0.2 monocular autocue. It is
@@ -9,7 +9,7 @@ optics on the bench before putting any part near an eye.
 
 ![Optical engine previewed in its 100-degree clear-away pose](parked-preview.png)
 
-These are generated directly from `openglasshole.scad` with
+These are generated directly from `open-occucue.scad` with
 `./render_previews.sh`. They include scale proxies for the eye, prescription
 lens, and temple; they are not photographs or human-fit evidence.
 
@@ -178,7 +178,7 @@ the frame bows or glass sees point pressure.
 
 ## Selectors
 
-Set `part` in `openglasshole.scad` or pass `-D 'part="..."'`.
+Set `part` in `open-occucue.scad` or pass `-D 'part="..."'`.
 
 | Selector | Output | Purpose |
 | --- | --- | --- |

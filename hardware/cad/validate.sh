@@ -2,7 +2,7 @@
 set -euo pipefail
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-source_file="$script_dir/openglasshole.scad"
+source_file="$script_dir/open-occucue.scad"
 mesh_check="$script_dir/validate_mesh.py"
 
 printable_parts=(
@@ -33,7 +33,7 @@ if [[ ! -x "$mesh_check" ]]; then
   exit 126
 fi
 
-validation_dir=$(mktemp -d "${TMPDIR:-/tmp}/openglasshole-cad.XXXXXX")
+validation_dir=$(mktemp -d "${TMPDIR:-/tmp}/open-occucue-cad.XXXXXX")
 cleanup() {
   if [[ ${VALIDATION_KEEP:-0} == 1 ]]; then
     echo "kept validation outputs: $validation_dir"

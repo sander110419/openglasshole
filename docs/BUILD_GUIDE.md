@@ -47,7 +47,7 @@ When the parts arrive:
    if the rating is unknown or lower.
 4. Mark the combiner's coated/reflective face using removable tape on its frame,
    never ink or adhesive on the optical area.
-5. Edit the parameters at the top of `hardware/cad/openglasshole.scad` before
+5. Edit the parameters at the top of `hardware/cad/open-occucue.scad` before
    exporting final parts.
 
 ## 2. Prove the OLED and firmware on USB
@@ -87,7 +87,7 @@ starts at column `0x20`, unlike many generic SSD1306 examples.
 On a laptop or Raspberry Pi connected to the same 2.4 GHz LAN:
 
 ```sh
-export OPENGLASSHOLE_API_KEY='replace-with-a-long-random-key'
+export OPEN_OCCUCUE_API_KEY='replace-with-a-long-random-key'
 python3 server/cue_server.py --host 0.0.0.0 --port 8787
 ```
 

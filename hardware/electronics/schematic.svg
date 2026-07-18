@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
-  <title id="title">OpenGlassHole reference and split-pod wiring schematic</title>
+  <title id="title">Open OccuCue reference and split-pod wiring schematic</title>
   <desc id="desc">A protected lithium polymer cell connects through a switch and optional near-glasses disconnect to the XIAO ESP32-C3 battery pads. The local XIAO powers a short four-wire I2C OLED and reads one push button.</desc>
   <style>
     .bg{fill:#0f1419}.panel{fill:#19232d;stroke:#9fb3c8;stroke-width:3}.label{fill:#eef6ff;font:700 25px system-ui,sans-serif}.small{fill:#c7d4e2;font:18px system-ui,sans-serif}.tiny{fill:#b9c8d8;font:15px system-ui,sans-serif}.pin{fill:#0f1419;stroke:#7f95aa;stroke-width:2}.wire{fill:none;stroke-width:5;stroke-linejoin:round}.red{stroke:#ff6262}.black{stroke:#b4c1ce}.blue{stroke:#63b7ff}.yellow{stroke:#ffd166}.green{stroke:#5ee1a2}.dash{stroke-dasharray:10 8}.note{fill:#242f3a;stroke:#64788b;stroke-width:2}
   </style>
   <rect class="bg" width="1200" height="720"/>
-  <text x="50" y="58" class="label">OpenGlassHole — reference point-to-point wiring</text>
+  <text x="50" y="58" class="label">Open OccuCue — reference point-to-point wiring</text>
 
   <rect x="60" y="245" width="195" height="135" rx="16" class="panel"/>
   <text x="82" y="285" class="label">Protected</text><text x="82" y="317" class="label">1S LiPo</text>

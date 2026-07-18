@@ -2,7 +2,7 @@
 set -euo pipefail
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-source_file="$script_dir/openglasshole.scad"
+source_file="$script_dir/open-occucue.scad"
 output_dir="$script_dir/build"
 
 printable_parts=(

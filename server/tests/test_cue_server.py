@@ -7,7 +7,7 @@ import tempfile
 import threading
 import unittest
 
-from server.cue_server import CueStore, create_server
+from server.cue_server import CueStore, create_server, resolve_api_key
 
 
 class RunningServer:
@@ -100,6 +100,24 @@ class CueStoreTests(unittest.TestCase):
             with self.assertRaises(OSError):
                 store.update("default", "not persisted")
             self.assertEqual(store.get("default").text, "original")
+
+
+class ConfigurationTests(unittest.TestCase):
+    def test_new_api_key_name_takes_precedence(self) -> None:
+        key, legacy = resolve_api_key(
+            {
+                "OPEN_OCCUCUE_API_KEY": "new-key",
+                "OPENGLASSHOLE_API_KEY": "old-key",
+            }
+        )
+        self.assertEqual((key, legacy), ("new-key", False))
+
+    def test_legacy_api_key_name_remains_a_deprecated_fallback(self) -> None:
+        key, legacy = resolve_api_key({"OPENGLASSHOLE_API_KEY": "old-key"})
+        self.assertEqual((key, legacy), ("old-key", True))
+
+    def test_missing_api_key_remains_unauthenticated(self) -> None:
+        self.assertEqual(resolve_api_key({}), ("", False))
 
 
 class CueServerTests(unittest.TestCase):

@@ -1,5 +1,5 @@
 /*
- * OpenGlassHole v0.2 mechanical reference
+ * Open OccuCue v0.2 mechanical reference
  *
  * Units: millimetres.
  * Axes in the assembly preview:

@@ -85,7 +85,7 @@ Oled49 display(
 );
 Preferences preferences;
 
-String cue_text = "OpenGlassHole ready";
+String cue_text = "Open OccuCue ready";
 String cue_etag;
 uint16_t wrapped_line_starts[MAX_WRAPPED_LINES]{};
 uint16_t wrapped_line_lengths[MAX_WRAPPED_LINES]{};
@@ -391,7 +391,7 @@ bool performFetch(
     }
     const char *response_headers[] = {"ETag", "X-Poll-Seconds", "X-Scroll-Ms"};
     request.collectHeaders(response_headers, 3);
-    request.setUserAgent("OpenGlassHole/0.1");
+    request.setUserAgent("OpenOccuCue/0.2");
     if (!request_etag.isEmpty()) {
         request.addHeader("If-None-Match", request_etag);
     }
@@ -635,7 +635,7 @@ void setup() {
     esp_sleep_enable_gpio_wakeup();
     WiFi.persistent(false);
     WiFi.mode(WIFI_OFF);
-    WiFi.setHostname("openglasshole");
+    WiFi.setHostname("open-occucue");
 
     preferences.begin("ogh", false);
     fetch_results = xQueueCreate(1, sizeof(FetchResult));

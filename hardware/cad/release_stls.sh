@@ -3,7 +3,7 @@ set -euo pipefail
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 release_dir="$script_dir/stl"
-source_file="$script_dir/openglasshole.scad"
+source_file="$script_dir/open-occucue.scad"
 mesh_check="$script_dir/validate_mesh.py"
 parts=(
   focus_bench_jig oled_cartridge lens_tunnel lens_retainer
@@ -27,7 +27,7 @@ else
 fi
 
 mkdir -p -- "$release_dir"
-stage_dir=$(mktemp -d "${TMPDIR:-/tmp}/openglasshole-release.XXXXXX")
+stage_dir=$(mktemp -d "${TMPDIR:-/tmp}/open-occucue-release.XXXXXX")
 cleanup() {
   rm -rf -- "$stage_dir"
 }

@@ -1,6 +1,6 @@
 # Safety
 
-OpenGlassHole is an uncertified DIY electronics and optics prototype. It is not
+Open OccuCue is an uncertified DIY electronics and optics prototype. It is not
 protective eyewear, a medical device, or a certified head-mounted display.
 
 ## Never use it in motion-critical situations

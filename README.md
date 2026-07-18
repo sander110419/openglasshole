@@ -1,4 +1,4 @@
-# OpenGlassHole
+# Open OccuCue
 
 An open-source, clip-on, monocular heads-up autocue for ordinary prescription glasses.
 It uses a tiny Wi-Fi microcontroller, a 64×32 white OLED, one positive lens, and
@@ -6,11 +6,11 @@ a separate 45° combiner pane to put server-fed text at a comfortable
 virtual distance. The reference optical path uses the OLED's central 48×32
 pixels to trade two characters per line for a larger eye box.
 
-![OpenGlassHole optical path](docs/images/optical-path.svg)
+![Open OccuCue optical path](docs/images/optical-path.svg)
 
-![OpenGlassHole deployed right-eye CAD assembly](hardware/cad/assembly-preview.png)
+![Open OccuCue deployed right-eye CAD assembly](hardware/cad/assembly-preview.png)
 
-![OpenGlassHole parked clear-away CAD assembly](hardware/cad/parked-preview.png)
+![Open OccuCue parked clear-away CAD assembly](hardware/cad/parked-preview.png)
 
 *Reproducible source-CAD renders of the deployed and 100° parked poses, not
 photographs or physical fit validation. The eye/lens/temple are scale proxies.*
@@ -20,6 +20,14 @@ photographs or physical fit validation. The eye/lens/temple are scale proxies.*
 > physically assembled or optically validated. Dimensions, runtime, eye box,
 > hinge retention, walking comfort, and breakaway behavior are engineering
 > targets until a real build report lands.
+
+> **AI-generation disclosure:** Every repository artifact in the recorded
+> generation run—code, CAD, schematics, documentation, tests, and native
+> images—was produced or edited by OpenAI Codex. The requester contributed
+> **zero manually authored implementation artifacts**. They did supply the
+> natural-language prompts and publication direction, which are human input;
+> the exact prompts, elapsed time, and token accounting are published in
+> [AI_PROVENANCE.md](docs/AI_PROVENANCE.md).
 
 ## The honest version
 
@@ -59,7 +67,7 @@ split pod variants, left/right assembly previews, bench jig, and combiner cut
 template are parametric. The OLED driver pre-mirrors text and handles the
 module's nonstandard visible RAM-column offset.
 
-![OpenGlassHole split controller and body battery pods](hardware/cad/split-pods-preview.png)
+![Open OccuCue split controller and body battery pods](hardware/cad/split-pods-preview.png)
 
 *The XIAO stays local to the OLED; only protected battery power crosses the
 two-wire tether. Lids are exploded here to show the packaging proxies.*
@@ -107,7 +115,7 @@ immediately.
 4. Run the dependency-free server:
 
    ```sh
-   export OPENGLASSHOLE_API_KEY='replace-with-a-long-random-key'
+   export OPEN_OCCUCUE_API_KEY='replace-with-a-long-random-key'
    python3 server/cue_server.py --host 0.0.0.0 --port 8787
    ```
 
@@ -133,6 +141,7 @@ The browser editor is at `http://<server-lan-ip>:8787/`. The firmware consumes
 | [`docs/BUILD_GUIDE.md`](docs/BUILD_GUIDE.md) | End-to-end print, wire, focus, mount, and test procedure |
 | [`docs/OPTIONS.md`](docs/OPTIONS.md) | Costed compactness, runtime, retention, and contrast options |
 | [`docs/WALKING_EXPERIMENT.md`](docs/WALKING_EXPERIMENT.md) | Clear-away, tether, dummy-head, and controlled gait protocol |
+| [`docs/AI_PROVENANCE.md`](docs/AI_PROVENANCE.md) | Verbatim prompts, generation disclosure, elapsed time, and token accounting |
 
 ## Validate the source
 

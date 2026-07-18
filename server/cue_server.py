@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dependency-free HTTP cue server for OpenGlassHole.
+"""Dependency-free HTTP cue server for Open OccuCue.
 
 The display consumes the small ``/api/v1/cue.txt`` response. A deliberately
 simple browser form and JSON API are included so a laptop or Raspberry Pi can
@@ -9,6 +9,7 @@ act as the autocue controller without a separate application.
 from __future__ import annotations
 
 import argparse
+from collections.abc import Mapping
 import dataclasses
 import datetime as dt
 import hashlib
@@ -29,6 +30,15 @@ from urllib.parse import parse_qs, quote, urlsplit
 MAX_BODY_BYTES = 4096
 MAX_CUE_CHARS = 512
 DEVICE_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
+
+
+def resolve_api_key(environ: Mapping[str, str]) -> tuple[str, bool]:
+    """Return the configured update key and whether its legacy name was used."""
+    api_key = environ.get("OPEN_OCCUCUE_API_KEY", "")
+    if api_key:
+        return api_key, False
+    legacy_api_key = environ.get("OPENGLASSHOLE_API_KEY", "")
+    return legacy_api_key, bool(legacy_api_key)
 
 
 def utc_now() -> str:
@@ -104,7 +114,7 @@ class Cue:
 class CueStore:
     """Thread-safe, atomically persisted per-device cue state."""
 
-    def __init__(self, path: Path | None, initial_text: str = "OpenGlassHole ready") -> None:
+    def __init__(self, path: Path | None, initial_text: str = "Open OccuCue ready") -> None:
         self.path = path
         self._lock = threading.RLock()
         self._devices: dict[str, Cue] = {
@@ -204,7 +214,7 @@ def create_server(
     address: tuple[str, int], store: CueStore, api_key: str = ""
 ) -> ThreadingHTTPServer:
     class CueRequestHandler(BaseHTTPRequestHandler):
-        server_version = "OpenGlassHole/1"
+        server_version = "OpenOccuCue/1"
 
         def log_message(self, fmt: str, *args: Any) -> None:
             # BaseHTTPRequestHandler logs the path but never request bodies/API keys.
@@ -380,9 +390,9 @@ def create_server(
             )
             return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OpenGlassHole cue</title><style>
+<title>Open OccuCue cue</title><style>
 :root{{color-scheme:dark;background:#101418;color:#edf7f6;font:18px system-ui,sans-serif}}body{{max-width:48rem;margin:3rem auto;padding:0 1rem}}form{{display:grid;gap:1rem}}label{{display:grid;gap:.35rem}}textarea,input{{box-sizing:border-box;width:100%;padding:.7rem;border:1px solid #557;border-radius:.4rem;background:#171d24;color:inherit;font:inherit}}textarea{{min-height:9rem}}.row{{display:grid;grid-template-columns:1fr 1fr;gap:1rem}}button{{padding:.8rem;border:0;border-radius:.4rem;background:#43d7b0;color:#06120f;font-weight:700;font-size:1rem}}small{{color:#a9bac5}}.warning{{color:#ffd479}}code{{color:#8debd2}}@media(max-width:36rem){{.row{{grid-template-columns:1fr}}}}</style></head>
-<body><h1>OpenGlassHole cue</h1><form method="post" action="/">
+<body><h1>Open OccuCue cue</h1><form method="post" action="/">
 <label>Device <input name="device" value="{html.escape(device)}" pattern="[A-Za-z0-9_.-]{{1,64}}" required></label>
 <label>Cue text <textarea name="text" maxlength="{MAX_CUE_CHARS}" autofocus>{html.escape(cue.text)}</textarea></label>
 <div class="row"><label>Poll every (seconds)<input type="number" name="poll_seconds" min="2" max="3600" value="{cue.poll_seconds}"></label>
@@ -398,19 +408,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--host", default="127.0.0.1", help="listen address (use 0.0.0.0 on a trusted LAN)")
     parser.add_argument("--port", type=int, default=8787)
     parser.add_argument("--data-file", type=Path, default=Path("server/data/cues.json"))
-    parser.add_argument("--initial-text", default="OpenGlassHole ready")
+    parser.add_argument("--initial-text", default="Open OccuCue ready")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    api_key = os.environ.get("OPENGLASSHOLE_API_KEY", "")
+    api_key, using_legacy_key = resolve_api_key(os.environ)
     store = CueStore(args.data_file, args.initial_text)
     server = create_server((args.host, args.port), store, api_key)
     host, port = server.server_address[:2]
-    print(f"OpenGlassHole cue server: http://{host}:{port}/", flush=True)
+    print(f"Open OccuCue cue server: http://{host}:{port}/", flush=True)
     if not api_key:
-        print("WARNING: OPENGLASSHOLE_API_KEY is unset; cue updates are unauthenticated.", flush=True)
+        print("WARNING: OPEN_OCCUCUE_API_KEY is unset; cue updates are unauthenticated.", flush=True)
+    elif using_legacy_key:
+        print(
+            "WARNING: OPENGLASSHOLE_API_KEY is deprecated; use OPEN_OCCUCUE_API_KEY.",
+            flush=True,
+        )
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -1,4 +1,4 @@
-OpenGlassHole uses two permissive open-source licenses.
+Open OccuCue uses two permissive open-source licenses.
 
 Software
 ========
@@ -17,7 +17,7 @@ CERN Open Hardware Licence Version 2 - Permissive. The full text is in
 LICENSES/CERN-OHL-P-2.0.txt.
 SPDX-License-Identifier: CERN-OHL-P-2.0.
 
-Copyright (c) 2026 OpenGlassHole contributors.
+Copyright (c) 2026 Open OccuCue contributors.
 
 Third-party libraries, tools, modules, and referenced vendor assets are not
 relicensed by this repository and remain under their respective terms.

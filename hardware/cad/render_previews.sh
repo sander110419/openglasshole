@@ -2,7 +2,7 @@
 set -euo pipefail
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-source_file="$script_dir/openglasshole.scad"
+source_file="$script_dir/open-occucue.scad"
 
 if [[ -n ${OPENSCAD_BIN:-} ]]; then
   openscad_command=("$OPENSCAD_BIN")
@@ -16,7 +16,7 @@ else
   exit 127
 fi
 
-stage_dir=$(mktemp -d "${TMPDIR:-/tmp}/openglasshole-previews.XXXXXX")
+stage_dir=$(mktemp -d "${TMPDIR:-/tmp}/open-occucue-previews.XXXXXX")
 cleanup() {
   rm -rf -- "$stage_dir"
 }
